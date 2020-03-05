@@ -1,0 +1,334 @@
+---
+title: "Homework 6"
+author: "JP"
+date: "2/14/2020"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Homework Assignment #6
+In this assignment you will again be working with a subset of the publicly available version of the
+data from the National Longitudinal Study of Adolescent to Adult Health (Add Health). This data
+can be found on the course website in Canvas under the “Files” tab. Look for data file
+“AddHealth.dta.”
+Use the STATA commands handout (also available in the Assignments tab) to help you
+complete this assignment. On the due date please hand in a hardcopy of your STATA output
+and answers to all questions in this assignment. You can either hand in a document with your
+answers (e.g., Word doc) with STATA output attached or you can incorporate answers to the
+questions directly into the STATA output in the form of comments. I prefer typed assignments in
+Times New Roman size 12 or Arial size 11.
+The following is a basic description of variables you will be using in this assignment.
+§ aid = a unique id number assigned to each adolescent respondent
+§ schoolid = a unique id number assigned to each school in the data set
+§ smoke_30days_w1 = a (semi) continuous measure of the number of days the student
+smoked cigarettes in the past 30 days
+§ cesd = a continuous measure of depression (score on the CESD survey)
+§ sex = adolescent sex (it is unclear whether this survey item was more closely measuring
+sex or gender. For our purposes assume it measures gender.)
+o 1 = male
+o 2 = female
+§ parent_highestedu = highest educational attainment of either
+parent/guardian/parent-figure of adolescents in the sample:
+o 1 = Less than high school (no HS degree)
+o 2 = Completed high school or equivalent
+o 3 = Some college (no degree)
+o 4 = College degree or more
+§ age_w1 = age in years (continuous measure) reported at wave 1
+
+```{r}
+library(tidyverse)
+library(readstata13)
+library(lme4)
+library(psych)
+library(optimx)
+library(lmerTest)
+library(dfoptim)
+
+options(max.print = 99999)
+options(scipen = 999)
+
+getwd()
+
+set.seed(232020)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+
+data <- data %>% 
+  dplyr::select(aid, 
+                schoolid, 
+                smoke_30days_w1,
+                cesd,
+                sex,
+                parent_highestedu,
+                age_w1) %>% 
+  rename(student = aid,
+         school = schoolid,
+         smoke = smoke_30days_w1,
+         depression = cesd,
+         parent_ed = parent_highestedu,
+         age = age_w1)
+
+colnames(data)
+```
+
+
+Tasks:
+1) Briefly explain the difference between “binary” and “binomial” outcomes.
+
+Answer: Binary outcomes are when data are 0's and 1's and the outcome is the probability of having something (yes) for an individual. Binomial outcomes are cells of proporitions in a group of people. 
+
+2) Briefly explain the difference between “Odds” and “Odds Ratio.”
+
+Answer: Odds are the values of probabilities of yes divided by the probabilities of no. Odds ratios are the odds of one group divided by the odds of the other group to make comparisons. 
+
+3) Smoking:
+a. Generate a variable called “smoker” which = 1 if the student smoked on 1 or
+more days in the past 30 during wave 1, and = 0 if not.
+
+```{r}
+describe(data$smoke, na.rm = TRUE)
+
+data %>% 
+ggplot(aes(smoke)) +
+  geom_histogram(color = 'white', fill = 'darkgreen')
+
+# Answer: 3A
+data <- data %>% 
+  mutate(smoker = case_when(smoke <= 0 ~ 0,
+                          smoke > 0 ~ 1))
+
+data %>% 
+ggplot(aes(smoker)) +
+  geom_bar(color = 'white', fill = 'dodgerblue') +
+  theme_minimal()
+
+# Answer 3B
+data %>% 
+  drop_na(smoker) %>% 
+  group_by(smoker) %>% 
+  summarize(n = n()) %>% 
+  mutate(freq = n/sum(n))
+```
+
+
+b. Obtain statistics on “smoker” – what proportion of respondents are past-30 day
+smokers in wave 1?
+
+Answer: .29 or 29% of respondents are past smokers. 
+
+c. Is “smoker” a binary or binomial outcome?
+
+Answer: Smoker is a binary outcome.
+
+4) Model 1: Write a logistic Random Intercepts model, where adolescents (level 1) are
+nested in schools (level 2). The outcome of interest is “smoker.” Include the following
+FE predictors: “female” and “parent education” (reference level = college degree or
+more). When writing the model be careful to include all steps (micro, macro, combined)
+and with the final combined model be sure to specify whether the model is Bernoulli or
+binomial, and what the variance at each level is.
+
+Micro: 
+$$ logit(\pi_{ij}) = \beta_{0j} + \beta_{1j}(female_{ij}) + \beta_{2j}(lessthanhs_{ij}) + \beta_{3j}(hsgrad_{ij}) + \beta_{4j}(somecollege_{ij}) $$
+
+Macro 1:(Intercept) 
+$$ \beta_{0j} = \beta_0 + \mu_{0j} $$
+
+
+$$ logit(\pi_{ij}) = \beta_0 + \beta_1(female_{ij}) + \beta_2(lessthanhs_{ij}) + \beta_3(hsgrad_{ij}) + \beta_4(somecollege_{ij}) + \mu_{0j}$$
+
+$$ Smoker_{ij} \sim Bernoulli(\pi_{ij})$$
+
+
+$$ Level 2: \mu_{0j} \sim N(0, \sigma^2_{u0}) $$
+
+$$  Level 1: Var(Smoker_{ij} | \pi_{ij}) = \pi_{ij}(1 - \pi_{ij})  $$
+
+
+5) Using STATA, fit Model 1 and request the “betas” be provided in the form of Odds and
+Odds Ratios. Then answer the following questions using the results:
+
+```{r}
+data <- data %>% 
+  mutate(parent_ed = recode(parent_ed, '1' = 'less_than_hs',
+                                    '2' = 'hs_grad',
+                                    '3' = 'some_college',
+                                    '4' = 'college_degree'),
+         sex = recode(sex, '1' = 'male',
+                      '2' = 'female')) %>% 
+  mutate(parent_ed = relevel(as.factor(parent_ed), ref = 'college_degree'),
+         sex = relevel(as.factor(sex), ref = 'male'))
+
+model1 <- glmer(smoker ~ sex + parent_ed + (1 |school), 
+                data = data, 
+                family = binomial(link = "logit"))
+summary(model1)
+
+# cc_model1 <- confint(model1, parm="beta_") 
+cc_model1_wald <- confint(model1, parm = "beta_", method = "Wald")
+# ctab_model1 <- cbind(est=fixef(model1), cc_model1)
+ctab_model1_wald <- cbind(est = fixef(model1), cc_model1_wald)
+
+ctab_model1_wald
+
+rtab_model1_wald <- exp(ctab_model1_wald)
+
+# Answer: Odds & Odds Ratios
+print(rtab_model1_wald, digits = 3)
+
+
+```
+
+a. What is the Odds being a smoker among males with a parent who has completed
+a college degree or more?
+
+Answer: The odds of being a smoker that is a male with a parent with a college degree or more is .28 
+
+b. How might we interpret the Odds Ratio associated with the lowest education
+level (less than high school degree)?
+
+Answer: Adolescents with parents that have less than a high school degree had 1.47 times the odds of reporting having smoked in the last 30 days than adolescents with parents that have a parent with a college degree or more. 
+
+c. Regardless of whether or not it is statistically significant, how would we interpret
+the Odds Ratio for “female” in this model?
+
+Answer: Females had .92 times the odds of reporting having smoked in the last 30 days compared to male adolescents. 
+
+d. Is the OR for “female” statistically significant, and what does this mean?
+
+Answer: The odds ratio for females was not statistically significant from males. This means that the odds of female adolescents reporting smoking is not significantly different from the odds of male adolescents reporting smoking. 
+
+6) Model 2: Write a linear Random Coefficients model for the continuous outcome CESD,
+where adolescents (level 1) are nested in schools (level 2). Include the following FE
+variables: female, parent education (reference level = college degree or more), and
+age_w1. In addition, treat “parent education” as a random coefficient. Be sure to
+include all steps (micro, macro, Combined model) and to include any level 2 and/or level
+1 variance-covariance matrices. When writing the model include covariances in the
+variance-covariance matrix.
+
+$$ Depression_{ij} = \beta_{0j} + \beta_{1j}(lessthanhs_{ij}) + \beta_{2j}(hsgrad_{ij}) + \beta_{3j}(somecollege_{ij}) + \beta_{4j}(female_{ij}) + \beta_{5j}(age_{ij}) + \epsilon_{0ij}  $$
+
+Macro 1:(Intercept) 
+$$ \beta_{0j} = \beta_0 + \mu_{0j} $$
+
+Macro 2a: (Slope for less than high school)
+$$ \beta_{1j} = \beta_1 + \mu_{1j} $$
+
+Macro 2b: (Slope for hs grad)
+$$ \beta_{2j} = \beta_2 + \mu_{2j} $$
+
+
+Macro 2c: (Slope for some college)
+$$ \beta_{3j} = \beta_3 + \mu_{3j} $$
+
+Combined: 
+$$ Depression_{ij} = \beta_{0} + \beta_{1}(lessthanhs_{ij}) + \beta_{2}(hsgrad_{ij}) + \beta_{3}(somecollege_{ij}) + \beta_{4}(female_{ij}) + \beta_{5}(age_{ij}) + \mu_{0j} + \mu_{1j}(lessthanhs_{ij}) + \mu_{2j}(hsgrad_{ij}) + \mu_{3j}(somecollege_{ij}) + \epsilon_{0ij} $$
+
+
+
+$$ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0j}\\
+\mu_{1j}\\
+\mu_{2j}\\
+\mu_{3j}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{u0} &  \\ 
+\sigma_{u0u1} & \sigma^2_{u1} &  \\
+\sigma_{u0u2} & \sigma_{u1u2} & \sigma^2_{u2} &  \\
+\sigma_{u0u3} & \sigma_{u1u3} & \sigma_{u2u3} & \sigma^2_{u3}
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+$$ Level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+Level 2 Variances: College degree or more
+$$  Var(\mu_0) = \sigma^2_{u0}X^2_0  $$
+
+Level 2 Variances: less than high school
+$$  Var(\mu_0 + \mu_1) = \sigma^2_{u0}X^2_0 + 2\sigma_{u0u1}X_0X_1 + \sigma^2_{u1}X^2_1 $$
+
+Level 2 Variances: high school degree
+$$  Var(\mu_0 + \mu_2) = \sigma^2_{u0}X^2_0 + 2\sigma_{u0u2}X_0X_2 + \sigma^2_{u2}X^2_2  $$
+
+Level 2 Variances: some college
+$$  Var(\mu_0 + \mu_3) = \sigma^2_{u0}X^2_0 + 2\sigma_{u0u3}X_0X_3 + \sigma^2_{u3}X^2_3  $$
+
+
+7) Using STATA, fit Model 2 but make the assumption that all covariances = 0. Then
+answer the following questions using the results.
+a. What is the between-school variance in the reference category (those with parent
+education = college degree or more)? Show any formulas you use.
+
+```{r}
+parent_dum <- dummy.code(data$parent_ed)
+
+data <- data.frame(data, parent_dum)
+
+# colnames(data)
+# str(data)
+
+model2 <- lmer(depression ~ hs_grad + less_than_hs + some_college +
+                 sex + age + (hs_grad + less_than_hs + some_college || school),
+              data = data,
+              REML = FALSE,
+              control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(model2)
+as.data.frame(VarCorr(model2))
+
+```
+
+
+Answer: The variation between schools for adolescents with parents that have a college degree or more is .553
+
+Level 2 Variances: College degree or more
+$$  Var(\mu_0) = \sigma^2_{u0} = .553  $$
+
+b. What is the between-school variance among those whose parents have
+education = some college? Show any formulas you use.
+
+Answer: The variation between schools for adolescents with parents that have a some college is 1.237
+
+$$  Var(\mu_0 + \mu_3) = \sigma^2_{u0} + 2\sigma_{u0u3} + \sigma^2_{u3}(9) = .553 + 0 + .076*9 = .553 + .684 = 1.237  $$
+
+c. What is the between-school variance among those whose parents have
+education = high school degree? Show any formulas you use.
+
+Answer: The variation between schools for adolescents with parents that have a high school degree is 13.209
+
+Level 2 Variances: high school degree
+$$  Var(\mu_0 + \mu_2) = \sigma^2_{u0} + 2\sigma_{u0u2} + \sigma^2_{u2}(4) = .553 + 0 + 12.656 = 13.209 $$
+
+d. What is the between-school variance among those whose parents have
+education = less than high school? Show any formulas you use.
+
+Answer: The variation between schools for adolescents with parents that have a less than a high school degree is .679
+
+Level 2 Variances: less than high school
+$$  Var(\mu_0 + \mu_1) = \sigma^2_{u0} + 2\sigma_{u0u1} + \sigma^2_{u1}(1) = .553 + 0 + .126 = .679 $$
+
+e. Which group (those with parent education of college degree plus, some college,
+high school degree, or less than high school degree) has the largest betweenschool variance in CESD? 
+
+Answer: The most variation in depression scores appears to be adolescents with parents that have a high school degree. 
+
+8) On Canvas there is a file called “Final Project Worksheet.” Download this and fill it out to
+the best of your abilities. When you submit your homework, include a printed copy of
+this document (so I can provide some feedback) AND email me a copy of it. The
+document is in Word, so you should be able to fill it out electronically. I would like the
+electronic copy so I can begin to keep records about the final project you are proposing.
+We will schedule one-on-one meetings after this assignment is due, and I will use this
+worksheet to formally approve your final project proposal. If you already know you will
+not be doing a final project, there is no need to complete this worksheet. If you are not
+certain, it may make sense to complete it just in case so you can think through the
+possibility.

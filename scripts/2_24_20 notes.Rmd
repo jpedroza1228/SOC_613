@@ -1,0 +1,77 @@
+---
+title: "2/24/20 notes soc 613"
+author: "JP"
+date: "2/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Notes
+
+#Heteroscedascity
+Which factors are modifying the beta parameters?
+`\mu_{0j}` and `\epsilon_{0ij}`
+
+epsilon for age `\epsilon_{1ij}` `(age_{ij})`
+
+Consider heteroscedascity at level 1 because it could change the variance in level 2
+
+Panel data is often NOT constant over time.
+
+- tend to see more variance in variables over time
+
+If you're doing a random slopes model, you should probably look at heteroscedascity at level 1. 
+
+```{r}
+library(tidyverse)
+library(readstata13)
+library(lme4)
+library(psych)
+library(optimx)
+library(lmerTest)
+library(dfoptim)
+
+
+options(max.print = 99999)
+options(scipen = 999)
+
+getwd()
+
+set.seed(232020)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+```
+
+`https://quantdev.ssri.psu.edu/sites/qdev/files/ILD_Ch06_2017_MLMwithHeterogeneousVariance.html`
+
+
+```{r}
+model <- lmer(cesd ~ age_w1 + (1 | schoolid), data = data)
+summary(model)
+
+# what it should look like
+# .mixed cesd age_w1 || schoolid: || aid: age_w1, noconstant
+
+data %>% 
+  dplyr::select(age_w1) %>% 
+  inspectdf::inspect_na()
+
+mod1 <- nlme::lme(fixed = cesd ~ age_w1 + 1,  
+                random = list(schoolid = nlme::pdSymm(form = ~ schoolid)),
+                weights = nlme::varIdent(form = ~ 1 + age_w1 | aid),
+                        data = data)
+summary(mod1)
+
+library(nlme)
+
+ex <- lme(fixed = cesd ~ age_w1, 
+                random = ~ 1 | schoolid,
+                weights = varIdent(form = ~ age_w1 | aid), 
+                data = data)
+
+
+```
+

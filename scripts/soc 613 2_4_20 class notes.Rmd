@@ -1,0 +1,64 @@
+---
+title: "soc 2_4_20 class"
+author: "JP"
+date: "2/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Notes for class on 2/4/20
+
+Difference between index and scale of constructs. 
+
+For example, examining phone use, but various ways to use phone (i.e., texting, calls, twitter, etc.)
+
+So if score is created for phone use to create one measure of overall phone use.
+This is an index
+
+A scale measures something that is latently defined. Items need to be correlated of various items of an overall construct, such as depression. 
+
+**Index may not have a strong correlation between all items, a scale has a group of multiple correlated items.**
+
+## Educational Attainment
+
+Research Questions.
+1. Exmaination of school or neighborhood level clustering of attainment
+
+2. After adjusting for individual-level predictors, do these affect estiamtes of school and neighbordhood level clustering
+
+3. Does the relationship between pread and attainment vary between schools.
+
+4. Does the relationship between pread and attainment vary between neighbohoods. 
+
+### Steps for running analyses
+
+1. Run descriptives on every variable included in models.
+
+2. Sort schools by the first value for each school (or whatever nesting variable you are using) If you are using a different nesting variable along with schools (i.e., neighborhoods) then you'll sort by that variable too.
+
+3. Make sure you know the counts of each nested variable.
+
+4. Don't need to do the single-level OLS model. Just jump to multi-level models
+
+5. For RQ1, run null random intercept model. Look at the variance of the grouping variable/nesting variable. Look at the ICC for this model, to see differences between people and how much a school matters to make 2 people different. Now, will look at the neighborhood variable.
+
+6. Answer RQ2, to make the adjustments, include individual-level fixed effect variables to adjust and run similar icc analyses to the previous RQ.
+
+7. Make a table to examine differences between clustering types. FOr example, what were the differences in variance of nested variables, between individuals within the nested variables, and icc.
+
+8. To see what adjusted variables made a difference on your random effects and iccs. Also look at nested variable variance. If it goes down, maybe the difference is based on the composition of each school. For example, the fixed effects were significant, maybe the school variance dropped because there are rich schools, where dad's occupational job is more important. Can make assumptions if you have variables that may serve as a proxy. Dad's occupational job may be correlated high with their median household income in the neighborhood. 
+
+- To examine the percentage of between-context (schools) variation that was explained by the fixed effect covaraites. sigma2_mu0 is the total unexplained variation while sigma2_mu0 of the adjusted model (which is the unexplained variance after adjustment) and subtracting that, and then you get the total unexplained. This is important to know how much is explained by the fixed effect variables. Going from .089 to .003. The variables for sigma are unexplained. 
+
+- to explain the individual-level variation, you would use the sigma2_epsilon0 for both models. 
+
+9. Test differences between models to see what model is best.
+
+10. You can then explore more by testing an unstructured covariance.
+
+11. Looking at likelihood test shows that unstructured covariance was not good.
+
+12. When looking at caterpillar plots, a high intercept will have a low slope when looking at negative covariance.

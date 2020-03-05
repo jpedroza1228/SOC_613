@@ -1,0 +1,865 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Homework 6},
+            pdfauthor={JP},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Homework 6}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{JP}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+      \predate{\centering\large\emph}
+  \postdate{\par}
+    \date{2/14/2020}
+
+
+\begin{document}
+\maketitle
+
+Homework Assignment \#6 In this assignment you will again be working
+with a subset of the publicly available version of the data from the
+National Longitudinal Study of Adolescent to Adult Health (Add Health).
+This data can be found on the course website in Canvas under the
+``Files'' tab. Look for data file ``AddHealth.dta.'' Use the STATA
+commands handout (also available in the Assignments tab) to help you
+complete this assignment. On the due date please hand in a hardcopy of
+your STATA output and answers to all questions in this assignment. You
+can either hand in a document with your answers (e.g., Word doc) with
+STATA output attached or you can incorporate answers to the questions
+directly into the STATA output in the form of comments. I prefer typed
+assignments in Times New Roman size 12 or Arial size 11. The following
+is a basic description of variables you will be using in this
+assignment. § aid = a unique id number assigned to each adolescent
+respondent § schoolid = a unique id number assigned to each school in
+the data set § smoke\_30days\_w1 = a (semi) continuous measure of the
+number of days the student smoked cigarettes in the past 30 days § cesd
+= a continuous measure of depression (score on the CESD survey) § sex =
+adolescent sex (it is unclear whether this survey item was more closely
+measuring sex or gender. For our purposes assume it measures gender.) o
+1 = male o 2 = female § parent\_highestedu = highest educational
+attainment of either parent/guardian/parent-figure of adolescents in the
+sample: o 1 = Less than high school (no HS degree) o 2 = Completed high
+school or equivalent o 3 = Some college (no degree) o 4 = College degree
+or more § age\_w1 = age in years (continuous measure) reported at wave 1
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## -- Attaching packages -------------------------------------------------------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
+\end{verbatim}
+
+\begin{verbatim}
+## v ggplot2 3.2.0     v purrr   0.3.2
+## v tibble  2.1.3     v dplyr   0.8.3
+## v tidyr   1.0.2     v stringr 1.4.0
+## v readr   1.3.1     v forcats 0.4.0
+\end{verbatim}
+
+\begin{verbatim}
+## -- Conflicts ----------------------------------------------------------------------------------------------------------------------------------------------- tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(readstata13)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'readstata13' was built under R version 3.6.2
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(lme4)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: Matrix
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'Matrix'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:tidyr':
+## 
+##     expand, pack, unpack
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(psych)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'psych'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:ggplot2':
+## 
+##     %+%, alpha
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(optimx)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'optimx' was built under R version 3.6.2
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(lmerTest)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'lmerTest' was built under R version 3.6.2
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'lmerTest'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:lme4':
+## 
+##     lmer
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:stats':
+## 
+##     step
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(dfoptim)}
+
+\KeywordTok{options}\NormalTok{(}\DataTypeTok{max.print =} \DecValTok{99999}\NormalTok{)}
+\KeywordTok{options}\NormalTok{(}\DataTypeTok{scipen =} \DecValTok{999}\NormalTok{)}
+
+\KeywordTok{getwd}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "E:/UO/R Projects/SOC 613/scripts"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{set.seed}\NormalTok{(}\DecValTok{232020}\NormalTok{)}
+
+\NormalTok{data <-}\StringTok{ }\KeywordTok{read.dta13}\NormalTok{(}\StringTok{"E:/UO/R Projects/SOC 613/data/AddHealth.dta"}\NormalTok{)}
+
+\NormalTok{data <-}\StringTok{ }\NormalTok{data }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\NormalTok{dplyr}\OperatorTok{::}\KeywordTok{select}\NormalTok{(aid, }
+\NormalTok{                schoolid, }
+\NormalTok{                smoke_30days_w1,}
+\NormalTok{                cesd,}
+\NormalTok{                sex,}
+\NormalTok{                parent_highestedu,}
+\NormalTok{                age_w1) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{rename}\NormalTok{(}\DataTypeTok{student =}\NormalTok{ aid,}
+         \DataTypeTok{school =}\NormalTok{ schoolid,}
+         \DataTypeTok{smoke =}\NormalTok{ smoke_30days_w1,}
+         \DataTypeTok{depression =}\NormalTok{ cesd,}
+         \DataTypeTok{parent_ed =}\NormalTok{ parent_highestedu,}
+         \DataTypeTok{age =}\NormalTok{ age_w1)}
+
+\KeywordTok{colnames}\NormalTok{(data)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "student"    "school"     "smoke"      "depression" "sex"       
+## [6] "parent_ed"  "age"
+\end{verbatim}
+
+Tasks: 1) Briefly explain the difference between ``binary'' and
+``binomial'' outcomes.
+
+Answer: Binary outcomes are when data are 0's and 1's and the outcome is
+the probability of having something (yes) for an individual. Binomial
+outcomes are cells of proporitions in a group of people.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Briefly explain the difference between ``Odds'' and ``Odds Ratio.''
+\end{enumerate}
+
+Answer: Odds are the values of probabilities of yes divided by the
+probabilities of no. Odds ratios are the odds of one group divided by
+the odds of the other group to make comparisons.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Smoking:
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  Generate a variable called ``smoker'' which = 1 if the student smoked
+  on 1 or more days in the past 30 during wave 1, and = 0 if not.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{describe}\NormalTok{(data}\OperatorTok{$}\NormalTok{smoke, }\DataTypeTok{na.rm =} \OtherTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    vars    n mean    sd median trimmed mad min max range skew kurtosis
+## X1    1 5591 4.92 10.08      0     2.4   0   0  30    30 1.85      1.7
+##      se
+## X1 0.13
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\OperatorTok{%>%}\StringTok{ }
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(smoke)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_histogram}\NormalTok{(}\DataTypeTok{color =} \StringTok{'white'}\NormalTok{, }\DataTypeTok{fill =} \StringTok{'darkgreen'}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 913 rows containing non-finite values (stat_bin).
+\end{verbatim}
+
+\includegraphics{homework-6_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Answer: 3A}
+\NormalTok{data <-}\StringTok{ }\NormalTok{data }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{smoker =} \KeywordTok{case_when}\NormalTok{(smoke }\OperatorTok{<=}\StringTok{ }\DecValTok{0} \OperatorTok{~}\StringTok{ }\DecValTok{0}\NormalTok{,}
+\NormalTok{                          smoke }\OperatorTok{>}\StringTok{ }\DecValTok{0} \OperatorTok{~}\StringTok{ }\DecValTok{1}\NormalTok{))}
+
+\NormalTok{data }\OperatorTok{%>%}\StringTok{ }
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(smoker)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{color =} \StringTok{'white'}\NormalTok{, }\DataTypeTok{fill =} \StringTok{'dodgerblue'}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 913 rows containing non-finite values (stat_count).
+\end{verbatim}
+
+\includegraphics{homework-6_files/figure-latex/unnamed-chunk-2-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Answer 3B}
+\NormalTok{data }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(smoker) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(smoker) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarize}\NormalTok{(}\DataTypeTok{n =} \KeywordTok{n}\NormalTok{()) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{freq =}\NormalTok{ n}\OperatorTok{/}\KeywordTok{sum}\NormalTok{(n))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 2 x 3
+##   smoker     n  freq
+##    <dbl> <int> <dbl>
+## 1      0  3944 0.705
+## 2      1  1647 0.295
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Obtain statistics on ``smoker'' -- what proportion of respondents are
+  past-30 day smokers in wave 1?
+\end{enumerate}
+
+Answer: .29 or 29\% of respondents are past smokers.
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Is ``smoker'' a binary or binomial outcome?
+\end{enumerate}
+
+Answer: Smoker is a binary outcome.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Model 1: Write a logistic Random Intercepts model, where adolescents
+  (level 1) are nested in schools (level 2). The outcome of interest is
+  ``smoker.'' Include the following FE predictors: ``female'' and
+  ``parent education'' (reference level = college degree or more). When
+  writing the model be careful to include all steps (micro, macro,
+  combined) and with the final combined model be sure to specify whether
+  the model is Bernoulli or binomial, and what the variance at each
+  level is.
+\end{enumerate}
+
+Micro:
+\[ logit(\pi_{ij}) = \beta_{0j} + \beta_{1j}(female_{ij}) + \beta_{2j}(lessthanhs_{ij}) + \beta_{3j}(hsgrad_{ij}) + \beta_{4j}(somecollege_{ij}) \]
+
+Macro 1:(Intercept) \[ \beta_{0j} = \beta_0 + \mu_{0j} \]
+
+\[ logit(\pi_{ij}) = \beta_0 + \beta_1(female_{ij}) + \beta_2(lessthanhs_{ij}) + \beta_3(hsgrad_{ij}) + \beta_4(somecollege_{ij}) + \mu_{0j}\]
+
+\[ Smoker_{ij} \sim Bernoulli(\pi_{ij})\]
+
+\[ Level 2: \mu_{0j} \sim N(0, \sigma^2_{u0}) \]
+
+\[  Level 1: Var(Smoker_{ij} | \pi_{ij}) = \pi_{ij}(1 - \pi_{ij})  \]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Using STATA, fit Model 1 and request the ``betas'' be provided in the
+  form of Odds and Odds Ratios. Then answer the following questions
+  using the results:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data <-}\StringTok{ }\NormalTok{data }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{parent_ed =} \KeywordTok{recode}\NormalTok{(parent_ed, }\StringTok{'1'}\NormalTok{ =}\StringTok{ 'less_than_hs'}\NormalTok{,}
+                                    \StringTok{'2'}\NormalTok{ =}\StringTok{ 'hs_grad'}\NormalTok{,}
+                                    \StringTok{'3'}\NormalTok{ =}\StringTok{ 'some_college'}\NormalTok{,}
+                                    \StringTok{'4'}\NormalTok{ =}\StringTok{ 'college_degree'}\NormalTok{),}
+         \DataTypeTok{sex =} \KeywordTok{recode}\NormalTok{(sex, }\StringTok{'1'}\NormalTok{ =}\StringTok{ 'male'}\NormalTok{,}
+                      \StringTok{'2'}\NormalTok{ =}\StringTok{ 'female'}\NormalTok{)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{parent_ed =} \KeywordTok{relevel}\NormalTok{(}\KeywordTok{as.factor}\NormalTok{(parent_ed), }\DataTypeTok{ref =} \StringTok{'college_degree'}\NormalTok{),}
+         \DataTypeTok{sex =} \KeywordTok{relevel}\NormalTok{(}\KeywordTok{as.factor}\NormalTok{(sex), }\DataTypeTok{ref =} \StringTok{'male'}\NormalTok{))}
+
+\NormalTok{model1 <-}\StringTok{ }\KeywordTok{glmer}\NormalTok{(smoker }\OperatorTok{~}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{parent_ed }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1} \OperatorTok{|}\NormalTok{school), }
+                \DataTypeTok{data =}\NormalTok{ data, }
+                \DataTypeTok{family =} \KeywordTok{binomial}\NormalTok{(}\DataTypeTok{link =} \StringTok{"logit"}\NormalTok{))}
+\KeywordTok{summary}\NormalTok{(model1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Generalized linear mixed model fit by maximum likelihood (Laplace
+##   Approximation) [glmerMod]
+##  Family: binomial  ( logit )
+## Formula: smoker ~ sex + parent_ed + (1 | school)
+##    Data: data
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##   6464.6   6504.3  -3226.3   6452.6     5507 
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.2067 -0.6784 -0.5058  1.1205  2.9877 
+## 
+## Random effects:
+##  Groups Name        Variance Std.Dev.
+##  school (Intercept) 0.3739   0.6115  
+## Number of obs: 5513, groups:  school, 132
+## 
+## Fixed effects:
+##                       Estimate Std. Error z value             Pr(>|z|)    
+## (Intercept)           -1.28822    0.08733 -14.750 < 0.0000000000000002 ***
+## sexfemale             -0.08228    0.06167  -1.334              0.18212    
+## parent_edhs_grad       0.49409    0.08407   5.877        0.00000000418 ***
+## parent_edless_than_hs  0.38160    0.11974   3.187              0.00144 ** 
+## parent_edsome_college  0.40689    0.08140   4.999        0.00000057771 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) sexfml prnt_dh_ prn___
+## sexfemale   -0.365                       
+## prnt_dhs_gr -0.474  0.004                
+## prnt_dlss__ -0.361  0.010  0.383         
+## prnt_dsm_cl -0.480  0.022  0.510    0.362
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# cc_model1 <- confint(model1, parm="beta_") }
+\NormalTok{cc_model1_wald <-}\StringTok{ }\KeywordTok{confint}\NormalTok{(model1, }\DataTypeTok{parm =} \StringTok{"beta_"}\NormalTok{, }\DataTypeTok{method =} \StringTok{"Wald"}\NormalTok{)}
+\CommentTok{# ctab_model1 <- cbind(est=fixef(model1), cc_model1)}
+\NormalTok{ctab_model1_wald <-}\StringTok{ }\KeywordTok{cbind}\NormalTok{(}\DataTypeTok{est =} \KeywordTok{fixef}\NormalTok{(model1), cc_model1_wald)}
+
+\NormalTok{ctab_model1_wald}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                               est      2.5 %      97.5 %
+## (Intercept)           -1.28822047 -1.4593938 -1.11704709
+## sexfemale             -0.08228076 -0.2031478  0.03858623
+## parent_edhs_grad       0.49408711  0.3293065  0.65886776
+## parent_edless_than_hs  0.38160468  0.1469090  0.61630037
+## parent_edsome_college  0.40689191  0.2473461  0.56643769
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rtab_model1_wald <-}\StringTok{ }\KeywordTok{exp}\NormalTok{(ctab_model1_wald)}
+
+\CommentTok{# Answer: Odds & Odds Ratios}
+\KeywordTok{print}\NormalTok{(rtab_model1_wald, }\DataTypeTok{digits =} \DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                         est 2.5 % 97.5 %
+## (Intercept)           0.276 0.232  0.327
+## sexfemale             0.921 0.816  1.039
+## parent_edhs_grad      1.639 1.390  1.933
+## parent_edless_than_hs 1.465 1.158  1.852
+## parent_edsome_college 1.502 1.281  1.762
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  What is the Odds being a smoker among males with a parent who has
+  completed a college degree or more?
+\end{enumerate}
+
+Answer: The odds of being a smoker that is a male with a parent with a
+college degree or more is .28
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  How might we interpret the Odds Ratio associated with the lowest
+  education level (less than high school degree)?
+\end{enumerate}
+
+Answer: Adolescents with parents that have less than a high school
+degree had 1.47 times the odds of reporting having smoked in the last 30
+days than adolescents with parents that have a parent with a college
+degree or more.
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Regardless of whether or not it is statistically significant, how
+  would we interpret the Odds Ratio for ``female'' in this model?
+\end{enumerate}
+
+Answer: Females had .92 times the odds of reporting having smoked in the
+last 30 days compared to male adolescents.
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Is the OR for ``female'' statistically significant, and what does this
+  mean?
+\end{enumerate}
+
+Answer: The odds ratio for females was not statistically significant
+from males. This means that the odds of female adolescents reporting
+smoking is not significantly different from the odds of male adolescents
+reporting smoking.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  Model 2: Write a linear Random Coefficients model for the continuous
+  outcome CESD, where adolescents (level 1) are nested in schools (level
+  2). Include the following FE variables: female, parent education
+  (reference level = college degree or more), and age\_w1. In addition,
+  treat ``parent education'' as a random coefficient. Be sure to include
+  all steps (micro, macro, Combined model) and to include any level 2
+  and/or level 1 variance-covariance matrices. When writing the model
+  include covariances in the variance-covariance matrix.
+\end{enumerate}
+
+\[ Depression_{ij} = \beta_{0j} + \beta_{1j}(lessthanhs_{ij}) + \beta_{2j}(hsgrad_{ij}) + \beta_{3j}(somecollege_{ij}) + \beta_{4j}(female_{ij}) + \beta_{5j}(age_{ij}) + \epsilon_{0ij}  \]
+
+Macro 1:(Intercept) \[ \beta_{0j} = \beta_0 + \mu_{0j} \]
+
+Macro 2a: (Slope for less than high school)
+\[ \beta_{1j} = \beta_1 + \mu_{1j} \]
+
+Macro 2b: (Slope for hs grad) \[ \beta_{2j} = \beta_2 + \mu_{2j} \]
+
+Macro 2c: (Slope for some college) \[ \beta_{3j} = \beta_3 + \mu_{3j} \]
+
+Combined:
+\[ Depression_{ij} = \beta_{0} + \beta_{1}(lessthanhs_{ij}) + \beta_{2}(hsgrad_{ij}) + \beta_{3}(somecollege_{ij}) + \beta_{4}(female_{ij}) + \beta_{5}(age_{ij}) + \mu_{0j} + \mu_{1j}(lessthanhs_{ij}) + \mu_{2j}(hsgrad_{ij}) + \mu_{3j}(somecollege_{ij}) + \epsilon_{0ij} \]
+
+\[ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0j}\\
+\mu_{1j}\\
+\mu_{2j}\\
+\mu_{3j}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{u0} &  \\ 
+\sigma_{u0u1} & \sigma^2_{u1} &  \\
+\sigma_{u0u2} & \sigma_{u1u2} & \sigma^2_{u2} &  \\
+\sigma_{u0u3} & \sigma_{u1u3} & \sigma_{u2u3} & \sigma^2_{u3}
+\end{array}\right]
+\end{array}\right) \]
+
+\[ Level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{\epsilon0}) \]
+
+Level 2 Variances: College degree or more
+\[  Var(\mu_0) = \sigma^2_{u0}X^2_0  \]
+
+Level 2 Variances: less than high school
+\[  Var(\mu_0 + \mu_1) = \sigma^2_{u0}X^2_0 + 2\sigma_{u0u1}X_0X_1 + \sigma^2_{u1}X^2_1 \]
+
+Level 2 Variances: high school degree
+\[  Var(\mu_0 + \mu_2) = \sigma^2_{u0}X^2_0 + 2\sigma_{u0u2}X_0X_2 + \sigma^2_{u2}X^2_2  \]
+
+Level 2 Variances: some college
+\[  Var(\mu_0 + \mu_3) = \sigma^2_{u0}X^2_0 + 2\sigma_{u0u3}X_0X_3 + \sigma^2_{u3}X^2_3  \]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{6}
+\tightlist
+\item
+  Using STATA, fit Model 2 but make the assumption that all covariances
+  = 0. Then answer the following questions using the results.
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  What is the between-school variance in the reference category (those
+  with parent education = college degree or more)? Show any formulas you
+  use.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{parent_dum <-}\StringTok{ }\KeywordTok{dummy.code}\NormalTok{(data}\OperatorTok{$}\NormalTok{parent_ed)}
+
+\NormalTok{data <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(data, parent_dum)}
+
+\CommentTok{# colnames(data)}
+\CommentTok{# str(data)}
+
+\NormalTok{model2 <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(depression }\OperatorTok{~}\StringTok{ }\NormalTok{hs_grad }\OperatorTok{+}\StringTok{ }\NormalTok{less_than_hs }\OperatorTok{+}\StringTok{ }\NormalTok{some_college }\OperatorTok{+}
+\StringTok{                 }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(hs_grad }\OperatorTok{+}\StringTok{ }\NormalTok{less_than_hs }\OperatorTok{+}\StringTok{ }\NormalTok{some_college }\OperatorTok{||}\StringTok{ }\NormalTok{school),}
+              \DataTypeTok{data =}\NormalTok{ data,}
+              \DataTypeTok{REML =} \OtherTok{FALSE}\NormalTok{,}
+              \DataTypeTok{control =} \KeywordTok{lmerControl}\NormalTok{(}\DataTypeTok{optimizer =} \StringTok{'Nelder_Mead'}\NormalTok{))}
+\KeywordTok{summary}\NormalTok{(model2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Linear mixed model fit by maximum likelihood . t-tests use
+##   Satterthwaite's method [lmerModLmerTest]
+## Formula: depression ~ hs_grad + less_than_hs + some_college + sex + age +  
+##     (hs_grad + less_than_hs + some_college || school)
+##    Data: data
+## Control: lmerControl(optimizer = "Nelder_Mead")
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##  42352.1  42426.5 -21165.0  42330.1     6395 
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.9965 -0.7034 -0.1872  0.5084  5.6774 
+## 
+## Random effects:
+##  Groups   Name         Variance Std.Dev.
+##  school   (Intercept)   0.55287 0.7436  
+##  school.1 hs_grad       0.12640 0.3555  
+##  school.2 less_than_hs  3.16423 1.7788  
+##  school.3 some_college  0.07629 0.2762  
+##  Residual              42.68472 6.5334  
+## Number of obs: 6406, groups:  school, 132
+## 
+## Fixed effects:
+##                Estimate Std. Error         df t value             Pr(>|t|)
+## (Intercept)     3.33869    0.79982 1313.32004   4.174       0.000031857319
+## hs_grad         1.54653    0.22042  219.25142   7.016       0.000000000028
+## less_than_hs    2.66819    0.36807   79.77951   7.249       0.000000000238
+## some_college    0.74319    0.21234  240.79061   3.500             0.000554
+## sexfemale       1.44821    0.16465 6380.46053   8.796 < 0.0000000000000002
+## age             0.43716    0.05071 1130.48262   8.620 < 0.0000000000000002
+##                 
+## (Intercept)  ***
+## hs_grad      ***
+## less_than_hs ***
+## some_college ***
+## sexfemale    ***
+## age          ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) hs_grd lss_t_ sm_cll sexfml
+## hs_grad     -0.081                            
+## less_thn_hs -0.031  0.270                     
+## some_colleg -0.103  0.444  0.266              
+## sexfemale   -0.150  0.002  0.005  0.016       
+## age         -0.975 -0.038 -0.042 -0.018  0.044
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{as.data.frame}\NormalTok{(}\KeywordTok{VarCorr}\NormalTok{(model2))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        grp         var1 var2        vcov     sdcor
+## 1   school  (Intercept) <NA>  0.55286924 0.7435518
+## 2 school.1      hs_grad <NA>  0.12640213 0.3555308
+## 3 school.2 less_than_hs <NA>  3.16423238 1.7788289
+## 4 school.3 some_college <NA>  0.07628729 0.2762015
+## 5 Residual         <NA> <NA> 42.68472205 6.5333546
+\end{verbatim}
+
+Answer: The variation between schools for adolescents with parents that
+have a college degree or more is .553
+
+Level 2 Variances: College degree or more
+\[  Var(\mu_0) = \sigma^2_{u0} = .553  \]
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  What is the between-school variance among those whose parents have
+  education = some college? Show any formulas you use.
+\end{enumerate}
+
+Answer: The variation between schools for adolescents with parents that
+have a some college is 1.237
+
+\[  Var(\mu_0 + \mu_3) = \sigma^2_{u0} + 2\sigma_{u0u3} + \sigma^2_{u3}(9) = .553 + 0 + .076*9 = .553 + .684 = 1.237  \]
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  What is the between-school variance among those whose parents have
+  education = high school degree? Show any formulas you use.
+\end{enumerate}
+
+Answer: The variation between schools for adolescents with parents that
+have a high school degree is 13.209
+
+Level 2 Variances: high school degree
+\[  Var(\mu_0 + \mu_2) = \sigma^2_{u0} + 2\sigma_{u0u2} + \sigma^2_{u2}(4) = .553 + 0 + 12.656 = 13.209 \]
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  What is the between-school variance among those whose parents have
+  education = less than high school? Show any formulas you use.
+\end{enumerate}
+
+Answer: The variation between schools for adolescents with parents that
+have a less than a high school degree is .679
+
+Level 2 Variances: less than high school
+\[  Var(\mu_0 + \mu_1) = \sigma^2_{u0} + 2\sigma_{u0u1} + \sigma^2_{u1}(1) = .553 + 0 + .126 = .679 \]
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Which group (those with parent education of college degree plus, some
+  college, high school degree, or less than high school degree) has the
+  largest betweenschool variance in CESD?
+\end{enumerate}
+
+Answer: The most variation in depression scores appears to be
+adolescents with parents that have a high school degree.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\setcounter{enumi}{7}
+\tightlist
+\item
+  On Canvas there is a file called ``Final Project Worksheet.'' Download
+  this and fill it out to the best of your abilities. When you submit
+  your homework, include a printed copy of this document (so I can
+  provide some feedback) AND email me a copy of it. The document is in
+  Word, so you should be able to fill it out electronically. I would
+  like the electronic copy so I can begin to keep records about the
+  final project you are proposing. We will schedule one-on-one meetings
+  after this assignment is due, and I will use this worksheet to
+  formally approve your final project proposal. If you already know you
+  will not be doing a final project, there is no need to complete this
+  worksheet. If you are not certain, it may make sense to complete it
+  just in case so you can think through the possibility.
+\end{enumerate}
+
+
+\end{document}

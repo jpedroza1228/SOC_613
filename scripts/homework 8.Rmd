@@ -1,0 +1,461 @@
+---
+title: "Homework 8"
+author: "JP"
+date: "3/3/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Homework Assignment #8
+In this assignment you will again be working with a subset of the publicly available version of the data from the National Longitudinal Study of Adolescent to Adult Health (Add Health). This data can be found on the course website in Canvas under the “Files” tab. Look for data file “AddHealth.dta.”
+Use the STATA commands handout (also available in the Assignments tab) to help youcomplete this assignment. On the due date please hand in a hardcopy of your STATA outputand answers to all questions in this assignment. You can either hand in a document with youranswers (e.g., Word doc) with STATA output attached or you can incorporate answers to the
+questions directly into the STATA output in the form of comments. I prefer typed assignments inTimes New Roman size 12 or Arial size 11.The following is a basic description of variables you will be using in this assignment.
+
+§ aid = a unique id number assigned to each adolescent respondent
+§ schoolid = a unique id number assigned to each school in the data set
+§ bmi_w1 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 1 of the survey (collected in 1994-95).
+§ bmi_w2 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 2 of the survey (collected in 1996).
+§ bmi_w3 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 3 of the survey collected in 2001-2002, when most
+respondents were between ages 18 and 26).
+§ bmi_w4 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 4 of the survey (collected in 2007-2008, when most
+respondents were between the ages of 24 and 32).
+§ sex = adolescent sex (it is unclear whether this survey item was more closely measuring
+sex or gender. For our purposes assume it measures gender.)
+o 1 = male
+o 2 = female
+§ parent_highestedu = highest educational attainment of either
+parent/guardian/parent-figure of adolescents in the sample:
+o 1 = Less than high school (no HS degree)
+o 2 = Completed high school or equivalent
+o 3 = Some college (no degree)
+o 4 = College degree or more
+§ age_w1 = age in years (continuous measure) reported at wave 1
+
+
+```{r}
+library(tidyverse)
+library(readstata13)
+library(psych)
+library(nlme)
+library(robustlmm)
+library(lme4)
+library(lmerTest)
+
+options(max.print = 99999)
+options(scipen = 999)
+
+getwd()
+
+set.seed(342020)
+
+health <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+
+health_sub <- health %>% 
+  dplyr::select(aid,
+                schoolid,
+                bmi_w1,
+                bmi_w2,
+                bmi_w3,
+                bmi_w4,
+                sex,
+                parent_highestedu,
+                age_w1,
+                multpov_w1)
+
+health_sub %>% 
+colnames()
+```
+
+## Tasks:
+In this assignment you will build on the two-level (panel) models you fit in Homework #5 tocreate three-level models in the Add Health data. Level 1 will be time (or wave) of observation,Level 2 will be adolescents (aid) and Level 3 will be school attended in wave 1 (schoolid).
+
+1) Data manipulation – same as in Homework 5:
+
+a. Convert the Add Health data set from wide format to long format, generating newvariables as you do—“wave” and “bmi.” Be sure that in your final data set youalso have the following variables: adolescent id (aid), school id (schoolid), sex,multpov_w1, parent_highestedu, and age_w1.
+
+```{r long data}
+long <- health_sub %>% 
+  gather(key = wave, value = bmi_values, c(-1:-2, -7:-10))
+```
+
+b. Create a variable for “female” gender.
+
+```{r}
+long <- long %>% 
+  mutate(sex = recode(sex, '1' = 'male',
+                      '2' = 'female'))
+         
+```
+
+
+c. When you treat wave as a predictor in these models you would like the interceptto be the baseline measurement that occurred at Wave 1. Create a new variable called “time” that is coded as follows:
+
+Time = 0 = Wave 1
+Time = 1 = Wave 2
+Time = 2 = Wave 3
+Time = 3 = Wave 4
+
+```{r}
+long <- long %>% 
+  mutate(time = recode(wave, 'bmi_w1' = '0',
+                       'bmi_w2' = '1',
+                       'bmi_w3' = '2',
+                       'bmi_w4' = '3'))
+
+str(long)
+
+long <- long %>% 
+  mutate(time = as.numeric(time))
+```
+
+
+2) Write the following models using proper notation and show all steps (level 1 model, level 2 model(s), level 3 model(s), combined model). In all cases except for Model 1, the models will have three-level structures where observations (level 1) are nested in adolescents (level 2) who are in turn nested in schools (level 3). The outcome for all models will be “bmi.” You may assume that any covariances between random variables are = 0. Do not provide interpretations at this stage.
+
+*** These models will build on each other, so be careful not to “loose” predictors you are asked to include in later stages.
+
+a. Model 1: Two-level Linear Random Intercept model with NO fixed effect predictors (null model).
+
+$$ Level 1: bmi_{ij} = \beta_{0j} + \epsilon_{0ij}  $$
+
+$$ Level 2: \beta_{0j} = \beta_{0} + \mu_{0j} $$
+
+
+$$ Combined: bmi_{ij} = \beta_0 + \mu_{0j} + \epsilon_{0ij}   $$
+
+
+$$ Level 2: [\mu_{0j}] \sim N(0, \sigma^2_{u0}) $$
+
+
+$$ Level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{e0})  $$
+
+
+
+b. Model 2: Three-level Linear Random Intercept model with NO fixed effect predictors (null model).
+
+$$ Level 1: bmi_{tij} = \beta_{0ij} + \epsilon_{0tij}  $$
+
+
+$$ Level 2: \beta_{0ij} = \beta_{0j} + \mu_{0ij} $$
+
+
+$$ Level 3: \beta_{0j} = \beta_0 + \nu_{0j} $$
+
+$$ Combined: bmi_{tij} = \beta_0 + \nu_{0j} + \mu_{0ij} + \epsilon_{0tij}   $$
+
+$$ Level 3: [\nu_{0j}] \sim N(0, \sigma^2_{v0}) $$
+
+
+$$ Level 2: [\mu_{0ij}] \sim N(0, \sigma^2_{u0}) $$
+
+
+$$ Level 1: [\epsilon_{0tij}] \sim N(0,\sigma^2_{e0})  $$
+
+c. Model 3: Model 2 + add the following fixed effect predictors: time, female gender, age at wave 1, and parent education level. In this model be careful to associated predictors with the appropriate level, and treat “college degree or more” as the reference level for parent education.
+
+$$ Level 1: bmi_{tij} = \beta_{0ij} + \beta_{1}(time_{tij}) + \epsilon_{0tij}  $$
+
+
+$$ Level 2: \beta_{0ij} = \beta_{0j} + \beta_{2}(female_{ij}) + \beta_{3}(age_{ij}) + \beta_{4}(lessthanhs_{ij}) + \beta_{5}(highschool_{ij}) + \beta_{6}(somecollege_{ij}) + \mu_{0ij} $$
+
+
+$$ Level 3: \beta_{0j} = \beta_0 + \nu_{0j} $$
+
+$$ Combined: bmi_{tij} = \beta_0 + \beta_{1}(time_{tij}) + \beta_{2}(female_{ij}) + \beta_{3}(age_{ij}) + \beta_{4}(lessthanhs_{ij}) + \beta_{5}(highschool_{ij}) + \beta_{6}(somecollege_{ij}) + \nu_{0j} + \mu_{0ij} + \epsilon_{0tij}   $$
+
+$$ Level 3: [\nu_{0j}] \sim N(0, \sigma^2_{v0}) $$
+
+
+$$ Level 2: [\mu_{0ij}] \sim N(0, \sigma^2_{u0}) $$
+
+
+$$ Level 1: [\epsilon_{0tij}] \sim N(0,\sigma^2_{e0})  $$
+
+d. Model 4: Model 3 + treat time as a random variable at both levels 2 and 3 (this is now a Three-level Linear Random Slopes model).
+
+$$ Level 1: bmi_{tij} = \beta_{0ij} + \beta_{1}(time_{tij}) + \epsilon_{0tij}  $$
+
+
+$$ Level 2: \beta_{0ij} = \beta_{0j} + \beta_{2}(female_{ij}) + \beta_{3}(age_{ij}) + \beta_{4}(lessthanhs_{ij}) + \beta_{5}(highschool_{ij}) + \beta_{6}(somecollege_{ij}) + \mu_{0ij} $$
+
+$$ Level 2 slope: \beta_{1ij} = \beta_{1j} + \mu_{1ij}   $$
+
+$$ Level 3: \beta_{0j} = \beta_0 + \nu_{0j} $$
+
+$$ Level 3 slope: \beta_{1j} = \beta_1 + \nu_{1j} $$
+
+$$ Combined: bmi_{tij} = \beta_0 + \beta_{1}(time_{tij}) + \beta_{2}(female_{ij}) + \beta_{3}(age_{ij}) + \beta_{4}(lessthanhs_{ij}) + \beta_{5}(highschool_{ij}) + \beta_{6}(somecollege_{ij}) + \nu_{0j} + \nu_{1j}(time_{tij}) + \mu_{0ij} + \mu_{1ij}(time_{tij}) + \epsilon_{0tij}   $$
+
+$$ Level 3: 
+\left[\begin{array}{cc} 
+\nu_{0j}\\
+\nu_{1j}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{v0} &  \\ 
+\sigma_{v0v1} = 0 & \sigma^2_{v1}
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+$$ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0ij}\\
+\mu_{1ij}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{u0} &  \\ 
+\sigma_{u0u1} = 0 & \sigma^2_{u1}
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+$$ Level 1: [\epsilon_{0tij}] \sim N(0,\sigma^2_{e0})  $$
+
+e. Model 5: Model 4 + treat “female” as a random coefficient at level 3.
+
+$$ Level 1: bmi_{tij} = \beta_{0ij} + \beta_{1}(time_{tij}) + \epsilon_{0tij}  $$
+
+
+$$ Level 2: \beta_{0ij} = \beta_{0j} + \beta_{2}(female_{ij}) + \beta_{3}(age_{ij}) + \beta_{4}(lessthanhs_{ij}) + \beta_{5}(highschool_{ij}) + \beta_{6}(somecollege_{ij}) + \mu_{0ij} $$
+
+$$ Level 2 time slope: \beta_{1ij} = \beta_{1j} + \mu_{1ij}   $$
+
+$$ Level 3: \beta_{0j} = \beta_0 + \nu_{0j} $$
+
+$$ Level 3 time slope: \beta_{1j} = \beta_1 + \nu_{1j} $$
+
+$$Level 3 female slope: \beta_{2j} = \beta_2 + \nu_{2j} $$
+
+$$ Combined: bmi_{tij} = \beta_0 + \beta_{1}(time_{tij}) + \beta_{2}(female_{ij}) + \beta_{3}(age_{ij}) + \beta_{4}(lessthanhs_{ij}) + \beta_{5}(highschool_{ij}) + \beta_{6}(somecollege_{ij}) + \nu_{0j} + \nu_{1j}(time_{tij}) + \nu_{2j}(female_{ij}) + \mu_{0ij} + \mu_{1ij}(time_{tij}) + \epsilon_{0tij}   $$
+
+$$ Level 3: 
+\left[\begin{array}{cc} 
+\nu_{0j}\\
+\nu_{1j}\\
+\nu_{2j}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{v0} &  \\ 
+\sigma_{v0v1} = 0 & \sigma^2_{v1} & \\
+\sigma_{v0v2} & \sigma_{v1v2} & \sigma^2_{v2} &  \\
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+$$ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0ij}\\
+\mu_{1ij}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{u0} &  \\ 
+\sigma_{u0u1} = 0 & \sigma^2_{u1}
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+$$ Level 1: [\epsilon_{0tij}] \sim N(0,\sigma^2_{e0})  $$
+
+
+
+3) Fit all models outlined in Question 2 using STATA. Store the results as you fit the models using “estimates store” commands. When fitting Models 1, 2, and 3 also calculate the ICC for each contextual level (level 2 and 3). You may request that STATA do these calculations for you.
+
+```{r}
+colnames(long)
+model1 <- lmer(bmi_values ~ 1 + (1 | aid), data = long, REML = FALSE,
+               control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(model1)
+
+```
+
+```{r}
+model2 <- lmer(bmi_values ~ 1 + (1 | schoolid) + (1 | schoolid:aid), data = long, REML = FALSE,
+               control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(model2)
+```
+
+```{r}
+long <- long %>% 
+  mutate(parent_highestedu = recode(parent_highestedu, '1' = 'less_than_hs',
+                                    '2' = 'hs_grad',
+                                    '3' = 'some_college',
+                                    '4' = 'college_degree'),
+         parent_highestedu = relevel(as.factor(parent_highestedu), ref = 'college_degree'),
+         sex = relevel(as.factor(sex), ref = 'male'),
+         bmi_values = as.numeric(bmi_values),
+         time = as.numeric(time),
+         age_w1 = as.numeric(age_w1),
+         aid = as.numeric(aid))
+
+model3 <- lmer(bmi_values ~ time + sex + age_w1 + parent_highestedu + (1 | schoolid) + (1 | schoolid:aid), data = long, REML = FALSE,
+               control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(model3)
+```
+
+```{r}
+model4 <- lmer(bmi_values ~ time + sex + age_w1 + parent_highestedu + (time || schoolid) + (time || schoolid:aid), data = long, REML = FALSE,
+               control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(model4)
+```
+
+```{r}
+
+sex_dum <- dummy.code(long$sex)
+
+long <- data.frame(long, sex_dum)
+
+
+model5 <- lmer(bmi_values ~ time + female + age_w1 + parent_highestedu + (time || schoolid) + (time + female || schoolid:aid), data = long, REML = FALSE,
+               control = lmerControl(optimizer = 'Nelder_Mead'))
+
+summary(model5) 
+
+```
+
+
+4) Using a series of likelihood ratio tests, compare each model to the previous model (Model 2 vs Model 1, Model 3 vs Model 2, and so on). Of these models, which model represents the best fit to the data? Note: in one of these tests you may get an error message saying that “observations differ.” Request the test anyway, and assume that it passes. 
+
+```{r}
+anova(model2, model1)
+
+# can't test the differences between models 2 and 3.
+# anova(model3, model2)
+# According to other fit indices (AIC), model 3 (AIC = 114,903.3) fits better than model 2 (AIC = 125,612.8)
+
+anova(model4, model3)
+
+anova(model5, model4)
+```
+
+
+5) Using the results you obtain from STATA, and doing calculations when necessary, complete following tables:
+
+a. Variance parameters associated with each level in each model. Model 1 will not have a “school-level” variance parameter.
+
+```{r}
+
+as.data.frame(VarCorr(model1))
+as.data.frame(VarCorr(model2))
+as.data.frame(VarCorr(model3))
+
+# model 1
+sum(insight::get_variance_intercept(model1)) /
+(sum(insight::get_variance_intercept(model1)) + insight::get_variance_residual(model1))
+
+# model 2
+model2_icc_3 <- sum(insight::get_variance_intercept(model2)) /
+(sum(insight::get_variance_intercept(model2)) + insight::get_variance_intercept(model2)[2] + insight::get_variance_residual(model2))
+
+model2_icc_2 <- sum(insight::get_variance_intercept(model2)) + insight::get_variance_intercept(model2)[2] /
+(sum(insight::get_variance_intercept(model2)) + insight::get_variance_intercept(model2)[2] + insight::get_variance_residual(model2))
+
+
+
+model2_vpc_3 <- sum(insight::get_variance_intercept(model2)) /
+(sum(insight::get_variance_intercept(model2)) + insight::get_variance_intercept(model2)[2] + insight::get_variance_residual(model2))
+
+model2_vpc_2 <- sum(insight::get_variance_intercept(model2)[2]) /
+(sum(insight::get_variance_intercept(model2)) + insight::get_variance_intercept(model2)[2] + insight::get_variance_residual(model2))
+
+# model 3
+model3_icc_3 <- sum(insight::get_variance_intercept(model3)) /
+(sum(insight::get_variance_intercept(model3)) + insight::get_variance_intercept(model3)[2] + insight::get_variance_residual(model3))
+
+model3_icc_2 <- sum(insight::get_variance_intercept(model3)) + insight::get_variance_intercept(model3)[2] /
+(sum(insight::get_variance_intercept(model3)) + insight::get_variance_intercept(model3)[2] + insight::get_variance_residual(model3))
+
+model3_vpc_3 <- sum(insight::get_variance_intercept(model3)) /
+(sum(insight::get_variance_intercept(model3)) + insight::get_variance_intercept(model3)[2] + insight::get_variance_residual(model3))
+
+model3_vpc_2 <- sum(insight::get_variance_intercept(model3)[2]) /
+(sum(insight::get_variance_intercept(model3)) + insight::get_variance_intercept(model3)[2] + insight::get_variance_residual(model3))
+
+model2_icc_3
+model2_icc_2
+
+model2_vpc_3
+model2_vpc_2
+
+model3_icc_3
+model3_icc_2
+
+model3_vpc_3
+model3_vpc_2
+
+performance::icc(model1)
+performance::icc(model2)
+performance::icc(model3)
+
+
+```
+
+
+```{r}
+table_5a <- data.frame(Levels = c('School-level', 'Child-level', 'Observation-level'),
+                       Model_1 = c(' ', '21.39', '14.64'),
+                       Model_2 = c('20.25', '1.09', '14.64'),
+                       Model_3 = c('21.11', '.66', '7.87'))
+
+table_5b_icc <- data.frame(Levels = c('School-level', 'Child-level'),
+                       Model_1 = c(' ', '.594'),
+                       Model_2 = c('.576', '21.37'),
+                       Model_3 = c('.719', '21.78'))
+
+table_5c_vpc <- data.frame(Levels = c('School-level', 'Child-level'),
+                       Model_1 = c(' ', '.594'),
+                       Model_2 = c('.576', '.029'),
+                       Model_3 = c('.719', '.022'))
+
+table_5a
+table_5b_icc
+table_5c_vpc
+```
+
+
+6) Answer the following questions using your results from STATA:
+
+a. What does the “beta” for time represent in Models 3, 4 and 5? (What does it explain/capture?)
+
+Answer: the beta for time in all three of these models represents the trajectory of bmi values of the sample as a whole. 
+
+b. Briefly describe the VPC results from Models 1, 2 and 3 and what they indicate.
+
+Answer: The VPC results indicate that in the first model, there is a lot of variation found between adolescents. However, when addressing potential differences between adolescents and between schools, more of the variation is shown between schools and even more when including fixed effect variables in the model. 
+
+In the first model, 59% of the total variation is attributed to differences found between adolescents. 
+In the second model, 58% of the total variation is attributed to differences between schools, while only 3% of the total variation is attributed to differences between adolescents. 
+In the final model, with the inclusion of fixed effect variables, 72% of the total variation is attributed to differences between schools, while 2% is attributed to differences between adolescents. 
+
+c. What does allowing time to be a random variable at levels 2 and 3 (in Model 4)
+mean?
+
+Answer: By allowing time to be a random variable at levels 2 and 3, we are interested in examining if the association between time and bmi changes by school and by adolescent. We are interested in the change of trajectory of BMI over time and potential differences between schools and between adolescents. 
+
+
+d. In Model 5, explain what allowing “female” to be random at level 3 means.
+Discuss in general terms and interpret the results from STATA.
+
+Answer: By allowing female to be random at level 3. We are interested in differences in schools between males and females. According to the findings, there was more variation in female BMIs between schools than there was for males. 
+
+

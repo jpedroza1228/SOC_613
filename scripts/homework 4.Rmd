@@ -1,0 +1,428 @@
+---
+title: "homework 4"
+author: "JP"
+date: "2/3/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readstata13)
+library(lme4)
+library(psych)
+
+# install.packages(c('optimx', 'lmerTest')
+library(optimx)
+library(lmerTest)
+library(dfoptim)
+
+options(max.print = 99999)
+options(scipen = 999)
+
+getwd()
+
+set.seed(232020)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+
+data <- data %>% 
+  dplyr::select(aid, schoolid,
+                bmi_w1,
+                bmi_w2,
+                bmi_w3,
+                bmi_w4,
+                sex,
+                parent_highestedu,
+                age_w1)
+
+data <- data %>% 
+  mutate(parent_highestedu = recode(parent_highestedu, '1' = 'less_than_hs',
+                                    '2' = 'hs_grad',
+                                    '3' = 'some_college',
+                                    '4' = 'college_degree'),
+         sex = recode(sex, '1' = 'male',
+                      '2' = 'female')) %>% 
+  mutate(parent_highestedu = relevel(as.factor(parent_highestedu), ref = 'college_degree'),
+         sex = relevel(as.factor(sex), ref = 'male'))
+```
+
+In this assignment you will again be working with a subset of the publicly available version of the data from the National Longitudinal Study of Adolescent to Adult Health (Add Health). This data can be found on the course website in Canvas under the “Files” tab. Look for data file “AddHealth.dta.” Use the STATA commands handout (also available in the Assignments tab) to help youcomplete this assignment. On the due date please hand in a hardcopy of your STATA outputand answers to all questions in this assignment. You can either hand in a document with youranswers (e.g., Word doc) with STATA output attached or you can incorporate answers to thequestions directly into the STATA output in the form of comments. I prefer typed assignments inTimes New Roman size 12 or Arial size 11.The following is a basic description of variables you will be using in this assignment.
+
+§ aid = a unique id number assigned to each adolescent respondent
+
+§ schoolid = a unique id number assigned to each school in the data set
+
+§ bmi_w1 = a continuous measure of body mass index (BMI) calculated from respondentheight and weight in wave 1 of the survey (collected in 1994-95).
+
+§ bmi_w2 = a continuous measure of body mass index (BMI) calculated from respondentheight and weight in wave 2 of the survey (collected in 1996).
+
+§ bmi_w3 = a continuous measure of body mass index (BMI) calculated from respondentheight and weight in wave 3 of the survey collected in 2001-2002, when mostrespondents were between ages 18 and 26).
+
+§ bmi_w4 = a continuous measure of body mass index (BMI) calculated from respondentheight and weight in wave 4 of the survey (collected in 2007-2008, when mostrespondents were between the ages of 24 and 32).
+
+§ sex = adolescent sex (it is unclear whether this survey item was more closely measuring
+sex or gender. For our purposes assume it measures gender.)
+
+o 1 = male
+o 2 = female
+
+§ parent_highestedu = highest educational attainment of eitherparent/guardian/parent-figure of adolescents in the sample:
+
+o 1 = Less than high school (no HS degree)
+o 2 = Completed high school or equivalent
+o 3 = Some college (no degree)
+o 4 = College degree or more
+
+§ age_w1 = age in years (continuous measure) reported at wave 1
+
+## Tasks:
+
+1) Comparing BMI at two points in time:
+
+a. Obtain summary statistics on BMI in the full sample at each of the four waves(sample size, mean, sd, min, max).
+
+Answer: Below in code.
+
+```{r}
+bmi <- data %>% 
+  select(bmi_w1:bmi_w4) %>% 
+  psych::describe(na.rm = TRUE)
+
+bmi
+```
+
+b. How do these statistics change over time for the sample as a whole?
+
+Answer: The average BMI increases over time.
+
+c. The command “graph matrix variable1 variable2…variable” provides a matrix ofscatter plots. Use this command to obtain a matrix of scatter plots for the fourwaves of BMI data.
+
+```{r}
+plot12 <- data %>% 
+  ggplot(aes(bmi_w1, bmi_w2)) +
+  geom_point(color = 'darkgreen') +
+  theme_minimal()
+
+plot13 <- data %>% 
+  ggplot(aes(bmi_w1, bmi_w3)) +
+  geom_point(color = 'darkgreen') +
+  theme_minimal()
+
+plot14 <- data %>% 
+  ggplot(aes(bmi_w1, bmi_w4)) +
+  geom_point(color = 'darkgreen') +
+  theme_minimal()
+
+plot23 <- data %>% 
+  ggplot(aes(bmi_w2, bmi_w3)) +
+  geom_point(color = 'dodgerblue') +
+  theme_minimal()
+
+plot24 <- data %>% 
+  ggplot(aes(bmi_w2, bmi_w4)) +
+  geom_point(color = 'dodgerblue') +
+  theme_minimal()
+
+plot34 <- data %>% 
+  ggplot(aes(bmi_w3, bmi_w4)) +
+  geom_point(color = 'red') +
+  theme_minimal()
+
+ggpubr::ggarrange(plot12, plot13, plot14,
+                  plot23, plot24,
+                  plot34, 
+                  ncol = 2)
+```
+
+
+d. What do you notice, and what does this imply about an individual’s BMI overtime?
+
+Answer: BMI is highly correlated at every time point. It implies that an individual's BMI will continue to increase over time. 
+
+2) In previous assignments we have established that there is school-level clustering of BMI. Using our new knowledge of ICC we will first attempt to quantify this clustering in wave 1.
+
+a. In STATA fit the following Random Intercept models for BMI in wave 1(bmi_w1):
+
+i. Model 1A: a Null Random Intercepts model with no FE predictors.
+
+```{r}
+ran_null <- lmer(bmi_w1 ~ 1 + (1 | schoolid), data = data, REML = FALSE)
+summary(ran_null)
+
+```
+
+
+ii. Model 2B: a Random Intercept model that adjusts for the following FEpredictors: female gender, age at wave 1, and parent education (collegeor higher is ref category).
+
+```{r}
+
+ran_int <- lmer(bmi_w1 ~ sex + age_w1 + parent_highestedu + (1 | schoolid),
+               data = data,
+               REML = FALSE)
+summary(ran_int)
+
+```
+
+
+b. For each model in Part A, calculate the ICC (either by hand or using STATA). Ifyou use STATA to generate the ICC, be sure to write the equation STATA usedto calculate it.
+
+```{r}
+
+sjstats::icc(ran_null)
+sjstats::icc(ran_int)
+
+# performance::icc() use this in the future
+```
+
+$$ \rho = \sigma^2_0/(\sigma^2_{\mu0} + \sigma^2_{\epsilon0}) $$
+
+
+c. How does the ICC change between the two models, and why might this be? Discuss in terms of changing variance parameters at level 1 and level 2.
+
+Answer: The ICC decreased between the two models from .053 to .025. The variance between the models has also decreased between the null model and the adjusted intercept model. The variance and ICC are reduced because of the inclusion of individual-level variables that attributes to the explained variance.
+
+d. What are the two ways we can interpret the calculated ICCs for the random intercepts models?
+
+Answer (Null Model): The expected correlation of outcomes between two individuals in the same group is .053. 5.3% of the total variation is attributed to differences between schools. 
+
+Answer (Random Intercept Model): The expected correlation of outcomes between two individuals in the same group while adjusting for fixed values is .025. 2.5% of the total variation is attributed to differences between schoolsw while adjusting for sex, age, and parent's education. 
+
+e. Now fit a Random Slopes Model:
+
+i. Model 3C: Random Slopes model with the same FE predictors as inModel 2, and treat age as a random variable. Allow the covariance to beunstructured. (This isn’t necessarily the “best” sequence to fit models in,but our goal here is just to have a random slopes model to look at).
+
+```{r}
+
+ran_slope <- lmer(bmi_w1 ~ age_w1 + sex + parent_highestedu + (age_w1 | schoolid),
+               data = data,
+               REML = FALSE,
+               control = lmerControl(optimizer ="Nelder_Mead"))
+summary(allFit(ran_slope))
+summary(ran_slope)
+as.data.frame(VarCorr(ran_slope))
+
+# model did not converge due to very large eigenvalue
+
+```
+
+f. Calculate the ICC for the Random Slope model for individuals with age_w1 = 18years.
+
+```{r}
+4.224*(1)^2 + 2*(-.235)*1*18 + (.015)*(18)^2
+slope_icc <- .624/(.624 + 18.17)
+slope_icc
+
+```
+
+
+$$ \rho = (\sigma^2_{\mu0}x^2_0 + 2\sigma_{\mu0\mu1}x_0x_1 + \sigma^2_{\mu1}x^2_1)/(\sigma^2_{\mu0}x^2_0 + 2\sigma_{\mu0\mu1}x_0x_1 + \sigma^2_{\mu1}x^2_1) + \sigma^2_{\epsilon0}  $$ 
+
+
+
+g. How can we interpret the ICC calculated in part F?
+
+Answer: For two individuals at the same school that are both 18 years old, the intraclass correlation coefficient was 4.7%. 
+
+3) The primary purpose of this problem is to explore how the importance of schools (i.e.,
+the school-level clustering) for BMI changes over time.
+
+a. Begin by fitting the following Random Intercepts models. As you fit each model
+ask STATA to give you the ICC. Make note of the ICCs for later.
+
+i. Model 2A: outcome = bmi_w2, a Null Random Intercepts model with noFE predictors.
+
+```{r}
+ran_null2 <- lmer(bmi_w2 ~ 1 + (1 | schoolid), data = data, REML = FALSE)
+summary(ran_null2)
+null2 <- sjstats::icc(ran_null2)
+```
+
+
+ii. Model 2B: outcome = bmi_w2, a Random Intercept model that adjusts forthe following FE predictors: female gender, age at wave 1, parenteducation.
+
+```{r}
+ran_int2 <- lmer(bmi_w2 ~ sex + age_w1 + parent_highestedu + (1 | schoolid),
+               data = data,
+               REML = FALSE)
+summary(ran_int2)
+int2 <- sjstats::icc(ran_int2)
+```
+
+
+iii. Model 3A: outcome = bmi_w3, a Null Random Intercepts model with noFE predictors.
+
+```{r}
+ran_null3 <- lmer(bmi_w3 ~ 1 + (1 | schoolid), data = data, REML = FALSE)
+summary(ran_null3)
+null3 <- sjstats::icc(ran_null3)
+```
+
+
+iv. Model 3B: outcome = bmi_w3, a Random Intercept model that adjusts forthe following FE predictors: female gender, age at wave 1, parenteducation.
+
+```{r}
+ran_int3 <- lmer(bmi_w3 ~ sex + age_w1 + parent_highestedu + (1 | schoolid),
+               data = data,
+               REML = FALSE)
+summary(ran_int3)
+int3 <- sjstats::icc(ran_int3)
+```
+
+
+v. Model 4A: outcome = bmi_w4, a Null Random Intercepts model with no
+FE predictors.
+
+```{r}
+ran_null4 <- lmer(bmi_w4 ~ 1 + (1 | schoolid), data = data, REML = FALSE)
+summary(ran_null4)
+null4 <- sjstats::icc(ran_null4)
+```
+
+
+vi. Model 4B: outcome = bmi_w4, a Random Intercept model that adjusts forthe following FE predictors: female gender, age at wave 1, parenteducation.
+
+```{r}
+ran_int4 <- lmer(bmi_w4 ~ sex + age_w1 + parent_highestedu + (1 | schoolid),
+               data = data,
+               REML = FALSE)
+summary(ran_int4)
+int4 <- sjstats::icc(ran_int4)
+```
+
+
+b. Make a table to organize your results for how ICC changes over time. Use
+something like the following setup:
+
+```{r table}
+
+null2
+int2
+null3
+int3
+null4
+int4
+
+table <- data.frame(Variable = c('Null Model ICC',
+                                 'Adjusted Model ICC'),
+                           wave_1_bmi = c('.053', '.025'),
+                    wave_2_bmi = c('.041', '.020'),
+                    wave_3_bmi = c('.041', '.028'),
+                    wave_4_bmi = c('.033', '.023'))
+
+table
+```
+
+
+
+c. How does the ICC change over time? What does this say about persistence of school effects?
+
+Answer: The ICC for the null models changes slightly from 5% to 3% by wave 4. However, the adjusted model reveals that the inclusion of sex, age, and parent's highest education makes the ICC remain constant across the ways. The persistence of school effects is that that there is some effect that is due to school differences when including fixed effects on bmi at different time points. 
+
+
+4) This problem is designed to help you get started on the code you will use in your finalproject. If you are electing NOT to complete the final project and will instead take theexam, use this problem as a chance to think about a hypothetical project you might liketo do. Note that in this problem you will be developing STATA code, but are not going tobe required to run any of it. (I realize many of you won’t have the data you are usingcleaned and ready to use yet.)
+
+a. What is the basic data structure you will be working with? (e.g., two-level model,three-level…?). Using Goldstein notation, draw this data structure.
+
+Answer: I'm not entirely sure yet. Right now, the data I'm working with is based on county-level variables. I think I want to look at variables at the county-level (individual-level), state-level (between-group).  
+
+b. What is your primary outcome of interest? (While you may have interest inseveral outcomes, for the final project you will only be required to use one ofthem. If possible I recommend using a continuous outcome because that is thefocus of our class. You may also use other types of outcomes, and we will coverlogistic/Poisson models in class at a later date).
+
+Answer: The outcome of interest is a measure of physical inactivity rates. It is continuous. 
+
+c. What are your primary predictors of interest (FE or RE variables), and what levelis each one associated with?
+
+Answer: Fixed effects/adjusted variables will be population, adult obesity, percent rurality, violent crime, median household income. All of these variables are county-level (individual-level)
+
+Random effects will be access to exercise opportunities over the state-level (between-group). 
+
+
+d. Write the code you will use to determine:
+
+i. How many observations are in your sample?
+
+```{r, eval = FALSE}
+data %>% 
+  count()
+```
+
+
+ii. How many groups (level 2 units) are in your sample?
+
+```{r, eval = FALSE}
+data %>% 
+  group_by(state_fips_code) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  count(state_fips_code) %>% 
+  summarize(states = sum(n))
+```
+
+iii. The number of level 1 units in level 2 groups – don’t print out the samplesize for each group, but rather describe the distribution of group sizes inthe sample (ex: what is the average number of adolescents per school?What is the min/max number of adolescents per school?).
+
+```{r, eval = FALSE}
+ex <- data %>% 
+  group_by(state_fips_code) %>% 
+  mutate(county_per = n()) %>% 
+sundry::descrips(county_per)
+
+```
+
+* Hint: go back to the slides and look for the “egen” command and the“generate tolist” code. These may be helpful.
+
+e. Now make a list of the models you will want to fit. These can include single-levelmodels, multilevel random intercept models, and multilevel random slope models.
+
+```{r, eval = FALSE}
+null_state <- lmer(physical_inactivity ~ 1 +
+                  (1 | state_fips_code), data = full_reduced_zz)
+summary(null_state)
+sjstats::icc(null_state)
+
+
+random_int_state <- lmer(physical_inactivity ~ population + adult_obesity +
+                           percent_rural + 
+                       violent_crime + median_household_income + 1 +
+                  (1 | state_fips_code), data = data)
+summary(random_int_state)
+sjstats::icc(random_int_state)
+
+
+state_no_inter_no_vcov <- lmer(physical_inactivity ~ population + adult_obesity +
+                                      percent_rural + 
+                       violent_crime + median_household_income +    
+                access_to_exercise_opportunities +
+                  (access_to_exercise_opportunities || state_fips_code), 
+                data = data,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(state_no_inter_no_vcov)
+as.data.frame(VarCorr(state_no_inter_no_vcov))
+# calculate icc for random slope model
+
+```
+Fixed effect: adult obesity, population, rurality, violent crime, median household income
+
+Random effect: access to exercise opportunities
+
+For each model, be sure to identify how different variables will be used (e.g., “asa FE predictor” or “as a random slope variable”). You do not need to write theactual models (equations) for this, because some of you may be interested inmodels we haven’t discussed yet in class. The goal here is to develop the “gameplan” for your project. 
+
+Extra Credit: (worth 1 point)
+
+§ Review the article “Evans et al-jech-2015” posted under “Articles of Interest” on the Filespage of Canvas. This was a short report we wrote as a “hypothesis generating” piece,and it was conducted in the full Add Health sample. The analyses in this paperresemble the analyses you conducted above.
+
+§ Answer the following questions:
+
+o What were the general findings from the gender-stratified and race/ethnicitystratified versions of the models?
+
+Answer: For sex-stratified findings, the results were similar, females' and males' BMI increased over time when adjusting for age, race, and parental education. 
+
+For race/ethnicity-stratified findings, there was clustering by school among all racial/ethnic groups (Black, Hispanic, White, Other), but the total variation of BMI attributable to schools was greatest in Whites. 
+
+o What are some of the hypothesized explanations for why clustering at the wave 1school-level persists into adulthood? In other words, why might adult individualscontinue to have BMIs correlated with the BMIs of those they went to school withas adolescents? 
+
+Answer: One potential reason is that schools are a salient factor in shaping the health behaviors that affect health behaviors in adulthood, which may then result in increased obesity. The other explanation is that young adults select friends that may resemble individuals that they were around in school. Then these behaviors still exist in these new adult peer groups. 
+

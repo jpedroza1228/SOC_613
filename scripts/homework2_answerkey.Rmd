@@ -1,0 +1,257 @@
+---
+title: "Homework 2"
+author: "JP"
+date: "1/14/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Homework 2
+
+`https://rpubs.com/rslbliss/r_mlm_ws`
+
+`https://rpsychologist.com/r-guide-longitudinal-lme-lmer`
+
+Google Search `https://www.google.com/search?q=two+level+random+intercept+model+r&oq=two+level+random+intercept+model+r&aqs=chrome..69i57j33.18238j0j4&sourceid=chrome&ie=UTF-8`
+
+`https://mran.microsoft.com/snapshot/2017-04-11/web/packages/sjPlot/vignettes/sjplmer.html`
+
+```{r}
+# install.packages('readstata13')
+
+# install.packages('stargazer')
+
+getwd()
+# get file directory path
+
+library(tidyverse)
+library(readstata13)
+library(betas)
+library(lme4)
+library(psych)
+library(knitr)
+library(kableExtra)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+
+data <- data %>% 
+  janitor::clean_names() %>% 
+  dplyr::select(aid, schoolid,
+                bmi_w1,
+                sex,
+                parent_highestedu,
+                age_w1)
+```
+
+In this assignment you will again be working with a subset of the publicly available version of the data from the National Longitudinal Study of Adolescent to Adult Health (Add Health). This data can be found on the course website in Canvas under the “Files” tab. Look for data file “AddHealth.dta.” Use the STATA commands handout (also available in the Assignments tab) to help you complete this assignment. On the due date please hand in a hardcopy of your STATA output and answers to all questions in this assignment. You can either hand in a document with your answers (e.g., Word doc) with STATA output attached or you can incorporate answers to the questions directly into the STATA output in the form of comments. I prefer typed assignments in Times New Roman size 12 or Arial size 11. The following is a basic description of variables you will be using in this assignment.
+
+* aid = a unique id number assigned to each adolescent respondent
+
+* schoolid = a unique id number assigned to each school in the data set
+
+* bmi_w1 = a continuous measure of body mass index (BMI) calculated from adolescent height and weight in wave 1 of the survey.
+
+* sex = adolescent sex (it is unclear whether this survey item was more closely measuring sex or gender. For our purposes assume it measures gender.)
++ 1 = male
++ 2 = female
+
+* parent_highestedu = highest educational attainment of either parent/guardian/parent-figure of adolescents in the sample:
++ 1 = Less than high school (no HS degree)
++ 2 = Completed high school or equivalent
++ 3 = Some college (no degree)
++ 4 = College degree or more
+
+* age_w1 = age in years (continuous measure) reported at wave 1
+
+1. Draw diagrams using the Goldstein notation we learned in class to represent the following data structures:
+a. Children (level 1) nested in Households (level 2) which are nested in Counties (level 3) which in turn are nested in States (level 4).
+
+
+b. Repeated surveys of the same neighborhoods over time. (Hints: who lives in a given neighborhood changes over time, and we are interested in how the neighborhood changes, not in how people change. Imagine for this example that the outcome of interest was a property of the neighborhood itself, such as population density.).
+
+
+c. Repeated surveys of the same respondents over time.
+
+
+d. Repeated surveys of the same respondents over time, and those respondents are nested in workplaces. Assume the workplace someone is nested in does not change over time.
+
+
+2. For each case, draw within one graphical model the regression line(s) for a continuous outcome (workplace chemical exposure) and the continuous predictor (years of
+education):
+a. No overall relationship between years of education and level of workplace chemical exposure. Substantial differences in workplace chemical exposure between six workplaces, but the relationship between education and exposure does not vary by workplace.
+
+
+b. A negative overall relationship between years of education and level of workplace chemical exposure (i.e., more years of education is associated with reduced workplace chemical exposure). Substantial differences in workplace chemical exposure between six workplaces, but the relationship between education and exposure does not vary by workplace.
+
+
+c. A negative overall relationship between years of education and level of workplace chemical exposure (i.e., more years of education is associated with reduced workplace chemical exposure). Substantial differences in workplace chemical exposure between six workplaces, AND the relationship between education and exposure DOES vary by workplace.
+
+
+3. Consider your own research interests and use an example that interests you to answer these questions.
+a. Draw the diagram for a two-level model using Goldstein’s notation. Be sure to specify what the units are at level 1 and level 2.
+
+states & counties
+
+b. Give at least two examples of variables that are associated with EACH level.
+
+states = median household income & percentage inactive
+
+counties = prevalence of liquor stores & rates of violent crime
+
+
+c. Write a two-level random intercept model based on this example, including each of the steps we covered (micro model, macro model, combined model). Be sure to specify what the outcome is and include at least one predictor (x variable) associated with level 1. Do not attempt to include a variable associated with level 2 (this is more advanced and we will cover it later). 
+
+Outcome is BMI and the one predictor is rates of violent crime
+
+Micro model: within-state, between-counties
+
+$$ BMI_{ij} = \beta_{0j} + \beta_1(crime_{ij}) + \epsilon_{0ij}$$
+
+Macro model: between-counties
+
+$$ \beta_{0j} = \beta_0 + \mu_{0j} $$
+
+Combined model: 
+
+$$ BMI_{ij} = \beta_0 + \beta_1(crime_{ij}) + \mu_{0j} + \epsilon_{0ij} $$
+$$ Level 2: [\mu_{0j}] = \sim N(0, \sigma^2_{\mu0})  $$
+$$ level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{\epsilon0})$$
+
+4. Using the Add Health data we will consider the case of adolescents (aid) nested in schools (schoolid). The outcome of interest is BMI at wave 1 (bmi_w1). In all steps if you are asked to write a model be sure to include the specification of the random effect terms. Also if you are asked to write a multilevel model be sure to include all steps (micro model, macro model, combined model).
+
+
+```{r}
+data <- data %>% 
+  mutate(parent_highestedu = recode(parent_highestedu, '1' = 'less_than_hs',
+                                    '2' = 'hs_grad',
+                                    '3' = 'some_college',
+                                    '4' = 'college_degree'),
+         sex = recode(sex, '1' = 'male',
+                      '2' = 'female')) %>% 
+  mutate(parent_highestedu = relevel(as.factor(parent_highestedu), ref = 'college_degree'),
+         sex = relevel(as.factor(sex), ref = 'male'))
+```
+
+
+a. Model 1: Write a single-level random intercept model for bmi_w1 that includes the following predictors: female, age_w1, and parent_highestedu (reference level = college degree or more). What critical assumption does this model make that we could address in a multilevel model?
+
+$$ BMI_i = \beta_{0i} + \beta_1(female_i) + \beta_2(age_i) + \beta_3(less than high school_i) + \beta_4(high school grad_i) + \beta_5(some college_i) + \epsilon{0i} $$
+
+$$ \epsilon_{0i} \sim N(0,\sigma^2_{\epsilon0}) $$
+
+The critical assumption is 
+
+
+b. Model 2: Write a two-level random intercept model for bmi_w1 that includes NO predictor variables (intercept only). Write interpretations (in words) for every parameter (betas, residuals, and sigma-squares) in the model (be sure to include interpretations for the beta parameter that is the outcome in the Macro model).
+
+Micro model: (within-school, between-adolescent)
+
+$$ BMI_{ij} = \beta_{0j} + \epsilon_{0ij}$$
+
+Macro model: (between-school)
+
+$$ \beta_{0j} = \beta_0 + \mu_{0j}  $$
+
+Combined model: 
+
+$$ BMI_{ij} = \beta_0 + \mu_{0j} + \epsilon_{0ij} $$
+
+$$ Level 2: [\mu_{0j}] = \sim N(0, \sigma^2_{\mu0}) $$
+
+
+$$ Level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+Interpretations:
+`\beta_0` is the BMI for an adolescent (across all schools)
+`\beta_{0j}` is the BMI for school j
+`\epsilon_{0ij}` is the residual differntial BMI for adolescent i in school j
+`\mu_{0j}` is the residual differential BMI for an adolescent in school j
+`\sigma^2_{\mu0}` is the between-school variance of BMI
+`\sigma^2_{\epsilon0}` is the within-school/between-person variance of BMI
+
+c. Model 3: Write a two-level random intercept model for bmi_w1 that includes the following predictors: female, age_w1, and parent_highestedu (reference level = college degree or more). Write interpretations (in words) for every parameter (betas, residuals, and sigma-squares) in the model (be sure to include interpretations for the beta parameter that is the outcome in the Macro model).
+
+Micro model: (within-school, between-adolescent)
+
+$$ BMI_{ij} = \beta_{0j} + \beta_1(female_{ij}) + \beta_2(age_{ij}) + \beta_3(less than high school_{ij}) + \beta_4(high school grad_{ij}) + \beta_5(some college_{ij}) + \epsilon_{0ij}$$
+
+Macro model: (between-school)
+
+$$ \beta_{0j} = \beta_0 + \mu_{0j}  $$
+
+Combined model: 
+
+$$ BMI_{ij} = \beta_0 + \beta_1(female_{ij}) + \beta_2(age_{ij}) + \beta_3(less than high school_{ij}) + \beta_4(high school grad_{ij}) + \beta_5(some college_{ij}) + \mu_{0j} + \epsilon_{0ij} $$
+
+$$ Level 2: [\mu_{0j}] \sim N(0, \sigma^2_{\mu0}) $$
+
+
+$$ Level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+Interpretations:
+`\beta_0` is the BMI for an adolescent (across all schools)
+`\beta_{0j}` is the BMI for school j
+`\epsilon_{0ij}` is the residual differntial BMI for adolescent i in school j
+`\mu_{0j}` is the residual differential BMI for an adolescent in school j
+`\sigma^2_{\mu0}` is the between-school variance of BMI
+`\sigma^2_{\epsilon0}` is the within-school/between-person variance of BMI
+
+d. Fit models 1, 2 and 3 using appropriate commands in STATA (reg or mixed) or in the software of your choice, and using the AddHealth.dta data set.
+
+```{r Model 1}
+model1 <- lm(bmi_w1 ~ sex + + age_w1 + parent_highestedu, data = data)
+summary(model1)
+confint(model1)
+lm.beta::lm.beta(model1)
+mse <- 4.324^2
+mse
+
+```
+
+```{r Model 2}
+model2 <- lmer(bmi_w1 ~ 1 + (1|schoolid), data = data, REML = FALSE)
+summary(model2)
+confint(model2)
+
+# stargazer(model2, type = 'text', ci = TRUE, ci.level = 0.95, single.row = TRUE)
+# qf(p = .95, df1 = 1, df2 = 6490)
+```
+
+```{r Model 3}
+model3 <- lmer(bmi_w1 ~ sex + + age_w1 + parent_highestedu + (1|schoolid), data = data, REML = FALSE)
+
+summary(model3)
+confint(model3)
+anova(model3)
+
+
+```
+
+
+
+e. What is the MSE from the single-level model? What parameter from the multilevel models does this most closely relate to? Compare the MSE from the single-level model to the equivalent parameter in Model 3—is it different, and if so then how so? What might account for any difference?
+
+
+Conceptual Questions:
+a. What does it mean if a school has a negative value for �"#? What does it mean if that value is positive?
+
+
+
+
+
+
+
+
+b. What does it mean if an individual adolescent has a negative value for �"%#? What does it mean if that value is positive?
+
+
+
+
+
+
+
+
+

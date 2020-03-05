@@ -1,0 +1,643 @@
+---
+title: "Homework 3"
+author: "JP"
+date: "1/24/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this assignment you will be working with publicly available data from the “High School and Beyond” survey as described by Raudenbush et al (2004) and used in the Rabe-Hesketh and Skrondal text. This data can be found on the course website in Canvas under the “Files” tab.Look for data file “hsb.dta.”Use the STATA commands handout (also available in the Assignments tab) to help you complete this assignment. On the due date please hand in a hardcopy of your STATA output and answers to all questions in this assignment. You can either hand in a document with your answers (e.g., Word doc) with STATA output attached or you can incorporate answers to the questions directly into the STATA output in the form of comments. I prefer typed assignments in Times New Roman size 12 or Arial size 11. 
+* Raudenbush, S.W., A.S. Bryk, Y.F. Cheong, and R. Congdon. 2004. HLM 6: Hierarchical Linear and Nonlinear Modeling. Lincolnwood, IL: Scientific Software International.
+The following is a basic description of the variables you will be using in this assignment.
+
+* schoolid = a unique id number assigned to each school in the data set.
+
+* mathach = a continuous measure of mathematics achievement.
+
+* ses = a continuous measure of socioeconomic status based on parental education, occupation, and income. This predictor is mean centered.
+
+* female = a dichotomous indicator of gender [1 = female, 0 = male].
+
+```{r}
+library(tidyverse)
+library(readstata13)
+library(lme4)
+library(psych)
+
+# install.packages(c('optimx', 'lmerTest')
+library(optimx)
+library(lmerTest)
+
+options(max.print = 99999)
+options(scipen = 999)
+
+getwd()
+
+set.seed(12420)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/hsb.dta")
+# data <- read.dta13("/Volumes/JPEDROZA/UO/R Projects/SOC 613/data/hsb.dta")
+
+colnames(data)
+
+data <- data %>% 
+  dplyr::select(schoolid, 
+                mathach,
+                ses,
+                female)
+```
+
+
+## Tasks:
+
+1) Quick Exploration of Data:
+
+a. How many respondents are in the sample?
+
+Answer: 7185
+
+```{r}
+data %>% 
+  count()
+```
+
+b. How many schools are in the sample? *Hint: recall useful piece of STATA code from session on Random Slopes (see slides).
+
+Answer: 160 different schools.
+```{r}
+data %>% 
+  group_by(schoolid) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  count(schoolid) %>% 
+  summarize(schools = sum(n))
+```
+
+
+c. Obtain summary statistics (n mean sd min max) for continuous variables mathach and SES.
+
+Answer: Below in code.
+
+```{r}
+# data %>%
+#   dplyr::select(mathach, ses) %>% 
+#   psych::describe(na.rm = TRUE)
+
+library(sundry)
+data %>% 
+  descrips(mathach, ses)
+```
+
+d. Plot histograms for the two continuous variables (mathach and SES).
+
+Answers: Below in code.
+```{r}
+data %>% 
+  ggplot(aes(mathach)) +
+  geom_histogram(color = 'white', fill = 'dodgerblue', bins = 30) +
+  theme_minimal()
+
+data %>% 
+  ggplot(aes(ses)) +
+  geom_histogram(color = 'white', fill = 'darkgreen', bins = 30) +
+  theme_minimal()
+```
+
+e. Obtain frequency statistics for the gender variable female (how many females and males are there in the sample? What proportion of the respondents are female?)
+
+Answer: Below in code. n is the number of males (0) and females (1) and freq is the proportions of each. The proportion of females in the sample is .53 or 53% of the sample. 
+
+```{r}
+data %>% 
+  group_by(female) %>% 
+  summarize(n = n()) %>% 
+  mutate(freq = n/sum(n))
+
+```
+
+
+2) For each model listed below, write the model (including any necessary in-between stages such as a micro and macro model) using proper notation. Interpret each parameter in the final combined model (fixed betas and random variance parameters). This time don’t worry about interpreting the parameters that only show up in the “halfway” stage (i.e., in the micro and macro models).
+
+a. Model 1: single-level model, outcome is mathach and SES is a fixed effect predictor.
+$$ 
+
+Mathach_i = \beta_{0i} + \beta_1(ses_i) + \epsilon_{0i}
+
+$$
+
+b. Model 2: random intercept model nesting students in schools, outcome is mathach and SES is a fixed effect predictor.
+
+Micro: 
+$$ 
+
+Mathach_{ij} = \beta_{0ij} + \beta_1(ses_{ij}) + \epsilon_{0ij}
+
+$$
+
+Macro: 
+$$ 
+
+\beta_{oj} = \beta_0 + \mu_{0j} 
+
+$$
+
+Combined: 
+$$ 
+
+Mathach_{ij} = \beta_0 + \beta_1(ses_{ij}) + \mu_{0j} + \epsilon_{0ij} 
+
+$$
+
+
+$$ 
+
+Level 2: [\mu_{0j}] \sim N(0, \sigma^2_{\mu0}) 
+
+$$
+
+$$
+
+Level 1: [\epsilon_{0ij}] \sim N(0,\sigma^2_{\epsilon0}) 
+
+$$
+
+Interpretations:
+`\beta_0` is the math achievement score for an adolescent with average ses (across all schools).
+`\beta_1` is the increase in math achievement score associated with an adolescent's increased ses. 
+`\mu_{0j}` is the residual difference between the overall average math achievement score for an adolescent in school j.
+`\epsilon_{0ij}` is the residual difference in math achievement scores for adolescent i in school j.
+`\sigma^2_{\mu0}` is the between-school variance of math achievement scores.
+`\sigma^2_{\epsilon0}` is the within-school/between-person variance of math achievement scores.
+
+
+c. Model 3: random slope model nesting students in schools (assume covariance =0). Outcome is mathach and SES is a random slope parameter.
+
+Micro: 
+$$ 
+
+Mathach_{ij} = \beta_{0j} + \beta_{1j}(ses_{ij}) + \epsilon_{0ij}
+
+$$
+
+Macro 1:(Intercept) 
+$$ 
+
+\beta_{0j} = \beta_o + \mu_{0j}
+
+$$
+
+Macro 2: (Slope)
+$$ 
+
+\beta_{1j} = \beta_1 + \mu_{1j} 
+
+$$
+
+Combined: 
+$$ 
+
+Mathach_{ij} = \beta_0 + \beta_1(ses_{ij}) + \mu_{0j} + \mu_{1j}(ses_{ij}) + \epsilon_{0ij} 
+
+$$
+
+$$  
+
+Level 2:
+\left[\begin{array}{cc} 
+\mu_{0j}\\
+\mu_{1j}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{\mu0} &  \\ 
+0 & \sigma^2_{\mu1}
+\end{array}\right]
+\end{array}\right)
+
+$$ 
+
+$$
+
+Level 1: 
+[\epsilon_{0ij}] 
+\sim N(0,\sigma^2_{\epsilon0}) 
+
+$$
+
+Interpretations:
+`\beta_0` is the math achievement score for an adolescent with average ses (across all schools).
+`\beta_1` is the increase in math achievement score associated with an adolescent's increased ses. 
+`\mu_{0j}` is the residual difference between the overall average math achievement score for an adolescent in school j
+`\mu_{1j}` is the residual difference of math achievement scores for adolescents with increased ses in school j.
+`\epsilon_{0ij}` is the residual difference in math achievement scores for adolescent i in school j.
+`\sigma^2_{\mu0}` is the between-school variance of math achievement scores in adolescents with average ses.
+`\sigma^2_{\mu1}` is the between-school variance in math achievement scores gained from increased ses.
+`\sigma_{\mu0\mu1}` is the school-level covariance parameter, which estimates the covariance between the random intercepts and random slopes. This model has a covariance of zero.
+`\sigma^2_{\epsilon0}` is the within-school/between-person variance of math achievement scores.
+
+
+d. Model 4: random slope model nesting students in schools with covariance allowed to differ from 0 (i.e., be + or -). Outcome is mathach and SES is the random slope parameter. You only need to write a parameter interpretation for the level 2 covariance parameter. The other parameter interpretations will be identical to the parameter interpretations in Model 3. Do write the model itself using correct notation, including any in-between models (micro, macros).
+
+Micro: 
+$$ Mathach_{ij} = \beta_{0j} + \beta_{1j}(ses_{ij}) + \epsilon_{0ij} $$
+
+Macro 1:(Intercept) 
+$$ \beta_{0j} = \beta_o + \mu_{0j} $$
+
+Macro 2: (Slope)
+$$ \beta_{1j} = \beta_1 + \mu_{1j} $$
+
+Combined: 
+$$ Mathach_{ij} = \beta_0 + \beta_1(ses_{ij}) + \mu_{0j} + \mu_{1j}(ses_{ij}) + \epsilon_{0ij} $$
+
+$$  
+
+Level 2:
+\left[\begin{array}{cc} 
+\mu_{0j}\\
+\mu_{1j}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{\mu0} &  \\ 
+\sigma_{\mu0\mu1} & \sigma^2_{\mu1}
+\end{array}\right]
+\end{array}\right)
+
+$$ 
+
+$$
+
+Level 1: 
+[\epsilon_{0ij}] 
+\sim N(0,\sigma^2_{\epsilon0}) 
+
+$$
+
+Interpretations:
+`\beta_0` is the math achievement score for an adolescent with average ses (across all schools)
+`\beta_1` is the increase in math achievement score associated with an adolescent's increased ses. 
+`\mu_{0j}` is the residual difference between the overall average math achievement score for an adolescent in school j
+`\mu_{1j}` is the residual difference of math achievement scores for adolescents with increased ses in school j.
+`\epsilon_{0ij}` is the residual difference in math achievement scores for adolescent i in school j
+`\sigma^2_{\mu0}` is the between-school variance of math achievement scores in adolescents with average ses.
+`\sigma^2_{\mu1}` is the between-school variance in math achievement scores gained from increased ses.
+`\sigma_{\mu0\mu1}` is the school-level covariance parameter, which estimates the covariance between the random intercepts and random slopes. 
+`\sigma^2_{\epsilon0}` is the within-school/between-person variance of math achievement scores
+
+
+3) For each model specified in Question 2, fit the model using STATA (or software of your choice). For Models 2, 3 and 4 you will want to store the results for use in Question 4 below. To store the results for use in LR testing use the “estimates store” command.
+
+```{r}
+sub <- data %>% 
+  group_by(schoolid) %>% 
+  mutate(n_per = n())
+
+sub_add <- sub %>% 
+  group_by(schoolid) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  count(schoolid)
+
+sub <- left_join(sub, sub_add, by = 'schoolid')
+
+sub <- sub %>% 
+  group_by(schoolid) %>%
+  mutate(one_school = !duplicated(n))
+         
+colnames(sub)
+
+sub <- sub %>% 
+  mutate(one_school = ifelse(one_school == "TRUE", 1, 0))
+```
+
+
+```{r}
+# install.packages('sjstats')
+
+single_model <- lm(mathach ~ ses, data = sub)
+summary(single_model)
+confint(single_model)
+
+
+ran_null <- lmer(mathach ~ 1 + (1 | schoolid), data = sub, REML = FALSE)
+summary(ran_null)
+
+
+ran_int <- lmer(mathach ~ ses + (1 | schoolid), data = sub, REML = FALSE)
+summary(ran_int)
+
+
+ran_slope_zerocov <- lmer(mathach ~ ses + (ses || schoolid), data = sub, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(ran_slope_zerocov)
+confint(ran_slope_zerocov, method = 'profile', level = .95)
+as.data.frame(VarCorr(ran_slope_zerocov))
+
+
+ran_slope <- lmer(mathach ~ ses + (ses | schoolid), data = sub, REML = FALSE,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+summary(ran_slope)
+confint(ran_slope, method = 'profile', level = .95)
+as.data.frame(VarCorr(ran_slope))
+
+```
+
+4) Using the results from STATA:
+
+a. Was SES a statistically significant fixed effect predictor in the Models, and if so which models? What was the nature of the relationship between SES and mathach overall?
+
+For the fixed model (`single_model`), ses was a significant predictor, with increases in ses being associated with an increase in mathach.
+For the random intercept model (`ran_int`), ses was a significant predictor, with increases in ses being associated with an increase in mathach.
+For the random slope model with a zero covariance (`ran_slope_zerocov`), the fixed effect of ses was significantly associated with an increase in mathach. 
+For the random slope model allowing for covariance (`ran_slope`), the fixed effect of ses was significantly associated with an increase in mathach. 
+
+Overall, an increase in adolescent's ses was associated with an increase in math achievement scores. 
+
+b. Use likelihood ratio tests to compare the random intercept and random slope model, and then to compare the random slope model with the random slope model that allows for covariance. 
+
+```{r}
+anova(ran_null, ran_int)
+anova(ran_int, ran_slope_zerocov)
+anova(ran_slope_zerocov, ran_slope)
+```
+
+c. Which model is the best fit? In your own words, what do these results indicate about the relationship between SES and math achievement scores? Are there “school effects” and if so, how are schools relevant to this relationship between SES and math achievement in the HSB sample?
+
+According to the likelihood ratio test, there was a significant increase in fit from the random intercept model to the random slopes model with zero covariance. However, there was no difference in fit between the zero covariance random slopes model and the random slopes model where covariance was allowed. Therefore, the best fitting model is the random slopes model with no covariance. 
+
+
+
+
+
+
+5) Use the “predict” command and other code from the in-class example to create twoway plots of the following models:
+
+```{r}
+sub$fixed_value <- predict(single_model, newdata = sub)
+sub$fixed_value <- as.numeric(sub$fixed_value)
+sub$random_null <- predict(ran_null, newdata = sub)
+sub$random_int <- predict(ran_int, newdata = sub)
+sub$random_nocv <- predict(ran_slope_zerocov, newdata = sub)
+sub$random_cv <- predict(ran_slope, newdata = sub)
+
+null_mu0 <- ranef(ran_null, condVar = TRUE)
+null_mu0 <- as.data.frame(null_mu0)
+
+null_mu0 <- null_mu0 %>% 
+  rename(null_term = term,
+         schoolid = grp,
+         null_diff = condval,
+         null_se = condsd)
+
+null_mu0$schoolid <- as.character(null_mu0$schoolid)
+null_mu0$schoolid <- as.numeric(null_mu0$schoolid)
+
+int_mu0 <- ranef(ran_int, condVar = TRUE)
+int_mu0 <- as.data.frame(int_mu0)
+
+int_mu0 <- int_mu0 %>% 
+  rename(ranint_term = term,
+         schoolid = grp,
+         ran_int_diff = condval,
+         ran_int_se = condsd)
+
+int_mu0$schoolid <- as.character(int_mu0$schoolid)
+int_mu0$schoolid <- as.numeric(int_mu0$schoolid)
+
+nocv_mu0 <- ranef(ran_slope_zerocov, condVar = TRUE)
+nocv_mu0 <- as.data.frame(nocv_mu0)
+
+nocv_mu0 <- nocv_mu0 %>% 
+  rename(nocv_term = term,
+         schoolid = grp,
+         nocv_diff = condval,
+         nocv_se = condsd)
+
+nocv_mu0$schoolid <- as.character(nocv_mu0$schoolid)
+nocv_mu0$schoolid <- as.numeric(nocv_mu0$schoolid)
+
+cv_mu0 <- ranef(ran_slope, condVar = TRUE)
+cv_mu0 <- as.data.frame(cv_mu0)
+
+cv_mu0 <- cv_mu0 %>% 
+  rename(cv_term = term,
+         schoolid = grp,
+         cv_diff = condval,
+         cv_se = condsd)
+
+cv_mu0$schoolid <- as.character(cv_mu0$schoolid)
+cv_mu0$schoolid <- as.numeric(cv_mu0$schoolid)
+
+sub <- left_join(sub, null_mu0, by = 'schoolid')
+sub <- left_join(sub, int_mu0, by = 'schoolid')
+sub <- left_join(sub, nocv_mu0, by = 'schoolid')
+sub <- left_join(sub, cv_mu0, by = 'schoolid')
+
+sub <- sub %>% 
+  dplyr::select(-grpvar.x,
+                -grpvar.x.x,
+                -grpvar.y,
+                -grpvar.y.y)
+
+```
+
+- Model A: Random Intercept model without ses as a predictor (i.e., null model).
+
+```{r}
+sub %>% 
+  ggplot(aes(ses, random_null)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(ses, random_null)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal()
+
+sub %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), null_diff), null_diff)) +
+  geom_errorbar(aes(ymin = null_diff + qnorm(0.025)*null_se,
+                    ymax = null_diff + qnorm(0.975)*null_se)) +
+  geom_point(aes(color = schoolid)) +
+  theme_minimal() +
+  coord_flip()
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), null_diff), null_diff)) +
+  geom_errorbar(aes(ymin = null_diff + qnorm(0.025)*null_se,
+                    ymax = null_diff + qnorm(0.975)*null_se)) +
+  geom_point(aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  coord_flip()
+ 
+```
+
+
+- Model B: Random Intercept model with ses as a fixed effect predictor.
+
+```{r}
+sub %>% 
+  colnames()
+
+sub %>% 
+  ggplot(aes(ses, random_int)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(ses, random_int)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal()
+
+sub %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), ran_int_diff), ran_int_diff)) +
+  geom_errorbar(aes(ymin = ran_int_diff + qnorm(0.025)*ran_int_se,
+                    ymax = ran_int_diff + qnorm(0.975)*ran_int_se)) +
+  geom_point(aes(color = schoolid)) +
+  theme_minimal() +
+  coord_flip()
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), ran_int_diff), ran_int_diff)) +
+  geom_errorbar(aes(ymin = ran_int_diff + qnorm(0.025)*ran_int_se,
+                    ymax = ran_int_diff + qnorm(0.975)*ran_int_se)) +
+  geom_point(aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  coord_flip()
+```
+
+
+- Model C: Random Slope model with ses as a fixed effect predictor, and treating ses as random slope.
+
+```{r}
+sub %>% 
+  colnames()
+
+sub %>% 
+  ggplot(aes(ses, random_nocv)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(ses, random_nocv)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  labs(title = 'Random Slope Model')
+
+sub %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), nocv_diff), nocv_diff)) +
+  geom_errorbar(aes(ymin = nocv_diff + qnorm(0.025)*nocv_se,
+                    ymax = nocv_diff + qnorm(0.975)*nocv_se)) +
+  geom_point(aes(color = schoolid)) +
+  theme_minimal() +
+  facet_wrap(~nocv_term) +
+  coord_flip()
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), nocv_diff), nocv_diff)) +
+  geom_errorbar(aes(ymin = nocv_diff + qnorm(0.025)*nocv_se,
+                    ymax = nocv_diff + qnorm(0.975)*nocv_se)) +
+  geom_point(aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  facet_wrap(~nocv_term) +
+  coord_flip()
+```
+
+
+- Model D: Random Slope model with ses as a fixed effect predictor, and treating ses as random slope, and allowing covariance to be unstructured.
+
+```{r}
+sub %>% 
+  colnames()
+
+sub %>% 
+  ggplot(aes(ses, random_cv)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  theme(legend.position = 'none')
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(ses, random_cv)) +
+  geom_point(color = 'gray70', alpha = .3) +
+  geom_smooth(se = FALSE, method = 'lm', aes(color = as.factor(schoolid))) +
+  theme_minimal()
+
+sub %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), cv_diff), cv_diff)) +
+  geom_errorbar(aes(ymin = cv_diff + qnorm(0.025)*cv_se,
+                    ymax = cv_diff + qnorm(0.975)*cv_se)) +
+  geom_point(aes(color = schoolid)) +
+  theme_minimal() +
+  facet_wrap(~cv_term) +
+  coord_flip()
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), cv_diff), cv_diff)) +
+  geom_errorbar(aes(ymin = cv_diff + qnorm(0.025)*cv_se,
+                    ymax = cv_diff + qnorm(0.975)*cv_se)) +
+  geom_point(aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  facet_wrap(~cv_term) +
+  coord_flip()
+```
+
+
+In the two-way plots, have ses on the x-axis versus predicted mathach scores, and have lines drawn by school. 
+
+* Hint: there are so many schools in the sample that it may make it difficult to see what is going on if we include all of them. Instead try adding the
+following to the twoway command in order to only draw lines for schools with id number smaller than 1478:
+
+`twoway connected y_hat xvar if schoolid <1478`
+
+6) For whichever model you decided was the “best fit” in Question 4 – obtain estimates of appropriate school-level residuals (mu 0j, mu 1j) for each school in the sample and the SE of these estimates. You do not need to actually print out the values, but please show the code that you use. Use these estimates to generate caterpillar plots. (If you found the “best” model to be the random intercepts one you will not need to include a caterpillar plot for �$#. If random slopes was the best fit, then do include a random slopes plot.)
+
+```{r}
+sub %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), nocv_diff), nocv_diff)) +
+  geom_errorbar(aes(ymin = nocv_diff + qnorm(0.025)*nocv_se,
+                    ymax = nocv_diff + qnorm(0.975)*nocv_se)) +
+  geom_point(aes(color = schoolid)) +
+  theme_minimal() +
+  facet_wrap(~nocv_term) +
+  coord_flip()
+
+sub %>% 
+  filter(schoolid < 1478) %>% 
+  ggplot(aes(fct_reorder(as.factor(schoolid), nocv_diff), nocv_diff)) +
+  geom_errorbar(aes(ymin = nocv_diff + qnorm(0.025)*nocv_se,
+                    ymax = nocv_diff + qnorm(0.975)*nocv_se)) +
+  geom_point(aes(color = as.factor(schoolid))) +
+  theme_minimal() +
+  facet_wrap(~nocv_term) +
+  coord_flip()
+```
+
+
+
+

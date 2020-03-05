@@ -1,0 +1,239 @@
+---
+title: "Homework 1"
+author: "JP"
+date: "1/7/2020"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
+
+```{r}
+# install.packages('readstata13')
+
+getwd()
+# get file directory path
+
+library(tidyverse)
+library(readstata13)
+library(betas)
+library(lme4)
+library(psych)
+library(knitr)
+library(kableExtra)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+
+data <- data %>% 
+  janitor::clean_names()
+```
+
+In this assignment you will be working with a subset of the publicly available version of the data from the National Longitudinal Study of Adolescent to Adult Health (Add Health). This data can be found on the course website in Canvas under the “Files” tab. Look for data file “AddHealth.dta.”
+
+Begin by downloading the data file to your computer and opening it in STATA. One way to open a data set is to use the “Open” tab in the File menu and proceed to where you have saved the data file. Double click the file name and it should load in STATA. 
+
+For this assignment, check out these two resources:
+
+* A STATA commands quick-reference handout (located on Canvas in the “STATA code”sub folder of “Files”).
+
+* The “Hints for HW1” document available in the Homework 1 folder on Canvas.
+
+On the due date please hand in a hardcopy of your STATA output and answers to all questions in this assignment. You can either hand in a document with your answers (e.g., Word doc) with STATA output attached or you can incorporate answers to the questions directly into the STATA output in the form of comments. I prefer typed assignments in Times New Roman size 12 or
+Arial size 11.
+
+```{r select variables}
+colnames(data)
+
+health <- data %>% 
+  dplyr::select(aid,
+                schoolid,
+                bmi_w1,
+                sex,
+                parent_highestedu,
+                hrs_sleep,
+                age_w1,
+                multpov_w1)
+
+```
+
+1. Begin by obtaining basic statistics (number of observations, mean, standard deviation, min/max values) on the following variables in the data set. When necessary you can round values to the nearest two decimal places. 
+
+Age, *n* = 6501, *M* = 15.53, *sd* = 1.78, minimum value = 11, maximum value = 21
+BMI, *n* = 6291, *M* = 22.49, *sd* = 4.42, minimum value = 11.22, maximum value = 56.43
+Hours of sleep *n* = 6477, *M* = 7.81, *sd* = 1.43, minimum value = 1, maximum value = 20
+
+```{r descriptives}
+three_var <- health %>% 
+  dplyr::select(age_w1, bmi_w1, hrs_sleep)
+
+psych::describe(three_var)
+
+```
+
+2. Generate the following two variables:
+a. female – code as 0 = male, 1 = female
+b. poor – code so that 0 = no, 1 = yes. In this case, being poor is defined as having a multpov_w1 value of < =1 (i.e., family is at or below the federal poverty line), or alternatively being non-poor (poor = 0) means having multpov_w1 > 1.
+
+```{r recoding}
+health %>% 
+  count(sex)
+
+describe(health$multpov_w1)
+
+# 1 = male, 2 = female
+
+health <- health %>% 
+  mutate(female = recode(sex, "1" = 'male',
+                              "2" = 'female'),
+         poor = case_when(multpov_w1 <= 1 ~ 1,
+                          multpov_w1 > 1 ~ 0),
+         poor = recode(poor, '1' = 'poor',
+                       '0' = 'not_poor'),
+         female = as.factor(female),
+         poor = as.factor(poor))
+
+```
+
+3. In STATA, output basic statistics (n mean sd min max) of bmi_w1 and hrs_sleep for each category of the following variables: female and poor.
+a. Is mean BMI higher among males or females (compare raw scores, don’t worry about statistical significance of the difference)?
+
+BMI is higher in males over females.
+
+b. What is the mean hours slept per night among adolescents from poor families?
+from non-poor families?
+The average number of hours of sleep for adolescents in poor families is 7.91 hours. In non-poor families, adolescents sleep 7.82 hours on average.
+
+```{r descriptives grouped}
+describeBy(health$bmi_w1, group = health$female)
+describeBy(health$hrs_sleep, group = health$female)
+describeBy(health$bmi_w1, group = health$poor)
+describeBy(health$hrs_sleep, group = health$poor)
+```
+
+4. Generate histograms to visualize the distribution of bmi_w1 and hrs_sleep in the sample. For each histogram, give a brief description of the distribution (i.e., normally distributed,
+skewed, etc?)
+
+For the full sample, BMI is positively skewed slightly, however it is still representative of a normal distribution. Hours of sleep represents a normal distribution.
+
+```{r}
+health %>% 
+  ggplot(aes(bmi_w1)) +
+  geom_histogram(color = 'white', fill = 'dodgerblue', bins = 20) +
+  theme_minimal()
+
+
+health %>% 
+  ggplot(aes(hrs_sleep)) +
+  geom_histogram(color = 'white', fill = 'dodgerblue', bins = 20) +
+  theme_minimal()
+
+```
+
+5. Using notation from class, write each of the following linear regression models. Be sure to include residual terms and index the appropriate terms by *i*.
+
+$$Y_i(BMI) = \beta_0 + e_0i$$
+
+$$Y_i(BMI) = \beta_0 + \beta_1(Female_i) + \beta_2(Age_i) + \beta_3(lessThanHS_i) + \beta_4(CompleteHS_i) + \beta_5(SomeCollege_i) + e_0i$$
+
+$$Y_i(HoursSleep) = \beta_0 + e_0i$$
+
+$$Y_i(HoursSleep) = \beta_0 + \beta_1(Female_i) + \beta_2(Poor_i) + \beta_3(Age_i) + e_0i$$
+
+6. Fit single-level linear regression models in STATA for each of the models outlined in Question 5.
+
+7. Compare the Mean Square Error (MSE) in Model 1 to MSE in Model 2. Compare the MSE in Model 3 to MSE in Model 4. What might account for the differences?
+
+The differences in MSE between models 1 and 2 is based on the inclusion of predictors (i.e., female, age, and parent education). The inclusion of predictors explained more of the variation than the intercept alone. The same can be said for the differences in MSE between model 3 and model 4.
+
+8. Use your results from Model 2 to answer the following questions. In this case consider a “beta” parameter to be statistically significant if it has p-value < 0.05.
+a. Do mean BMI values differ significantly between males and females in the sample? Describe any differences (i.e., do males or females have a higher BMI score on average, and by how much).
+b. Interpret the age_w1 beta parameter in terms of statistical significance and what the change in predicted BMI is for every unit change in age (e.g., “for every 1 year increase in age, the predicted BMI…”).
+c. How do mean BMI values differ between adolescents whose parents have attained different educational levels? Describe in terms of statistical significance, direction, and magnitude.
+
+A. While adjusting for age and parent education, male adolescents had a significantly higher BMI score by .26(`\beta` = .03) over female adolescents.
+
+B. While adjusting for gender/sex and parent education, age was a significant predictor of BMI, where every 1 year increase in age, the predicted BMI had a .42 (`\beta` = .17) increase.
+
+C. In comparison to adolescents with parents who have a college degree, adolescents with parents that had less than a high school degree had an significant increase of 1.26 (`\beta` = .09) in BMI score. Similarly, adolescents with parents that had a high school diploma had a higher BMI score of .61 (`\beta` = .06) over adolescents with college graduate parents. Parents with some college also reported having a significantly higher BMI score of .54 (`\beta` = .05) when compared to parents with college degrees.
+
+```{r Regression Models}
+
+model1 <- lm(bmi_w1 ~ 1, data = health)
+sum1 <- summary(model1)
+sum1
+mse1 <- mean(sum1$residuals^2)
+
+health <- health %>% 
+  mutate(parent_ed = as.factor(parent_highestedu),
+         parent_ed = recode(parent_ed, '1' = 'Less than high school',
+                            '2' = 'completed high school',
+                            '3' = 'some college',
+                            '4' = 'college degree'),
+         parent_ed = relevel(parent_ed, ref = 'college degree'))
+
+model2 <- lm(bmi_w1 ~ female + age_w1 + parent_ed, data = health)
+sum2 <- summary(model2)
+sum2
+betas.lm(model2)
+mse2 <- mean(sum2$residuals^2)
+
+cbind(mse1, mse2)
+```
+
+
+9. Use your results from Model 4 to answer the following questions. In this case consider a “beta” parameter to be statistically significant if it has p-value < 0.05.
+a. Do hours slept differ significantly between males and females in the sample, and if so by how much?
+b. Do hours slept differ significantly between adolescents from poor and non-poor families, and if so by how much?
+c. Interpret the age_w1 beta parameter in terms of statistical significance and what the change in predicted hours slept is for every unit change in age (e.g., “for every 1 year increase in age, the expected number of hours slept…”).
+
+A. Hours of sleep was significantly different in males and females, with males engaging in .14 `(\beta = .05) more hours of sleep than females.
+
+B. Hours of sleep did not differ between adolescents who were in poor and non-poor families.
+
+C. The association between age and hours slept was significant. For every 1 year increase in age, the expected number of hours slept reduced by -.20 (`\beta = -.25).
+
+```{r Regression Models 2}
+
+model3 <- lm(hrs_sleep ~ 1, data = health)
+sum3 <- summary(model3)
+sum3
+mse3 <- mean(sum3$residuals^2)
+
+model4 <- lm(hrs_sleep ~ female + poor + age_w1, data = health)
+betas.lm(model4)
+sum4 <- summary(model4)
+sum4
+mse4 <- mean(sum4$residuals^2)
+
+cbind(mse3, mse4)
+```
+
+10. In future assignments we will explore clustering of adolescents by school attended.
+a. For now, use the tabulate command to generate output specifying how many students are in each school.
+b. Which school has the most students (provide schoolid number), and how many students are in this school?
+c. Which school has the fewest students (provide schoolid number), and how many students are in this school?
+
+B. The school with the most students was school 166 with 122 students.
+
+C. The school with the least amount of students was school 216 with 12 students.
+
+```{r}
+health %>% 
+  group_by(schoolid) %>% 
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+health %>% 
+  group_by(schoolid) %>% 
+  summarize(n = n()) %>%
+  arrange(n)
+
+```
+
+
+
+

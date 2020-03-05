@@ -1,0 +1,397 @@
+---
+title: "Homework 5"
+author: "JP"
+date: "2/5/2020"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+`https://quantdev.ssri.psu.edu/tutorials/growth-modeling-chapter-3-linear-growth-models`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The following is a basic description of variables you will be using in this assignment.
+§ aid = a unique id number assigned to each adolescent respondent
+§ schoolid = a unique id number assigned to each school in the data set
+§ bmi_w1 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 1 of the survey (collected in 1994-95).
+§ bmi_w2 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 2 of the survey (collected in 1996).
+§ bmi_w3 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 3 of the survey collected in 2001-2002, when most
+respondents were between ages 18 and 26).
+§ bmi_w4 = a continuous measure of body mass index (BMI) calculated from respondent
+height and weight in wave 4 of the survey (collected in 2007-2008, when most
+respondents were between the ages of 24 and 32).
+§ sex = adolescent sex (it is unclear whether this survey item was more closely measuring
+sex or gender. For our purposes assume it measures gender.)
+o 1 = male
+o 2 = female
+§ parent_highestedu = highest educational attainment of either
+parent/guardian/parent-figure of adolescents in the sample:
+o 1 = Less than high school (no HS degree)
+o 2 = Completed high school or equivalent
+o 3 = Some college (no degree)
+o 4 = College degree or more
+§ age_w1 = age in years (continuous measure) reported at wave 1
+§ multpov_w1 = a ratio of the family’s income to the poverty threshold for a household of
+their size, as measured in wave 1. multpov_w1 is therefore a multiple of the poverty line.
+If multpov_w1 > 0 then their household is above the federal poverty line, if multpov_w1 <
+0 then it is below the federal poverty line.
+
+
+```{r}
+library(tidyverse)
+library(readstata13)
+library(lme4)
+library(psych)
+library(optimx)
+library(lmerTest)
+library(dfoptim)
+
+options(max.print = 99999)
+options(scipen = 999)
+
+getwd()
+
+set.seed(232020)
+
+data <- read.dta13("E:/UO/R Projects/SOC 613/data/AddHealth.dta")
+
+data <- data %>% 
+  dplyr::select(aid, 
+                schoolid,
+                bmi_w1,
+                bmi_w2,
+                bmi_w3,
+                bmi_w4,
+                sex,
+                parent_highestedu,
+                age_w1, 
+                multpov_w1)
+
+colnames(data)
+```
+
+Data manipulation:
+a. Convert the Add Health data set from wide format to long format, generating new
+variables as you do—“wave” and “bmi.” Be sure that in your final data set you
+also have the following variables: adolescent id (aid), school id (schoolid), sex,
+multpov_w1, parent_highestedu, and age_w1.
+b. Create variables “female” and “poor_w1” coded as we did in Homework #1.
+c. When you treat wave as a predictor in these models you would like the intercept
+to be the baseline measurement that occurred at Wave 1. Create a new variable
+called “time” that is coded as follows:
+Time = 0 if Wave 1
+Time = 1 if Wave 2
+Time = 2 if Wave 3
+Time = 3 if Wave 4
+
+```{r}
+long <- data %>% 
+  gather(key = time, value = bmi_values, c(-1:-2, -7:-10)) %>% 
+  mutate(female = recode(sex, "1" = 'male',
+                              "2" = 'female'),
+         poor = case_when(multpov_w1 <= 1 ~ 1,
+                          multpov_w1 > 1 ~ 0),
+         poor = recode(poor, '1' = 'poor',
+                       '0' = 'not_poor'),
+         female = as.factor(female),
+         poor = as.factor(poor),
+         aid = as.numeric(aid),
+         time = as.factor(time)) %>% 
+  mutate(parent_highestedu = recode(parent_highestedu, '1' = 'less_than_hs',
+                                    '2' = 'hs_grad',
+                                    '3' = 'some_college',
+                                    '4' = 'college_degree'),
+         sex = recode(sex, '1' = 'male',
+                      '2' = 'female'),
+         time = recode(time, 'bmi_w1' = '0',
+                       'bmi_w2' = '1',
+                       'bmi_w3' = '2',
+                       'bmi_w4' = '3')) %>% 
+  mutate(parent_highestedu = relevel(as.factor(parent_highestedu), ref = 'college_degree'),
+         sex = relevel(as.factor(sex), ref = 'male')) %>% 
+  mutate(bmi_values = as.numeric(bmi_values),
+         time = as.numeric(time),
+         age_w1 = as.numeric(age_w1),
+         aid = as.numeric(aid))
+  
+
+```
+
+Write the following models using proper notation and show all steps (micro model, macro
+model, combined model). In all cases the model will be two-level structures where
+observations (level 1) are nested in adolescents (level 2). Ignore clustering of
+adolescents within schools for the sake of this exercise. The outcome for all models will
+be “bmi.” Do not provide interpretations at this stage.
+a. Model 1: Two-level Random Intercept model with time as a continuous fixed
+effect predictor.
+
+$$ BMI_{ti} = \beta_{0i} + \beta_{1i}(time_{ti}) + \epsilon_{0ti} $$
+
+
+$$ \beta_{0i} = \beta_0 + \mu_{0i}  $$
+
+$$ BMI_{ti} = \beta_0 + \beta_{1}(time_{ti}) + \mu_{0i}(time_{0ti}) + \epsilon_{0ti} $$
+
+$$ Level 2: [\mu_{0i}] \sim N(0, \sigma^2_{\mu0}) $$
+
+$$ Level 1: [\epsilon_{0ti}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+b. Model 2: Two-level Random Intercept model with the following FE predictors:
+time, female, poor_w1, parent_highestedu, and age_w1. Treat “college degree
+or more” as the reference category for parent_highestedu.
+
+$$ BMI_{ti} = \beta_{0i} + \beta_{1i}(time_{ti}) + \beta_{2i}(female_{ti}) + \beta_{3i}(poor_{ti}) + \beta_{4i}(lessthanhs_{ti}) + \beta_{5i}(highschool_{ti}) + \beta_{6i}(somecollege_{ti}) + \beta_{7i}(age_{ti}) + \epsilon_{0ti}  $$
+
+$$ \beta_{0i} = \beta_0 + \mu_{0i} $$
+
+$$  BMI_{ti} = \beta_{0} + \beta_{1}(time_{ti}) + \beta_{2}(female_{ti}) + \beta_{3}(poor_{ti}) + \beta_{4}(lessthanhs_{ti}) + \beta_{5}(highschool_{ti}) + \beta_{6}(somecollege_{ti}) + \beta_{7}(age_{ti}) + \mu_{0i} + \epsilon_{0ti}  $$
+
+
+
+$$ Level 2: [\mu_{0i}] \sim N(0, \sigma^2_{\mu0}) $$
+
+
+$$ Level 1: [\epsilon_{0ti}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+
+c. Model 3: Two-level Random Slope model with time as a random slopes variable
+and the following variables as additional fixed effects: female, poor_w1,
+parent_highestedu, and age_w1. Treat “college degree or more” as the
+reference category for parent_highestedu. Constrain the level 2 covariance
+between random intercepts and random slopes to be = 0.
+
+Micro: 
+$$ BMI_{ti} = \beta_{0i} + \beta_{1i}(time_{ti}) + \beta_{2i}(female_{ti}) + \beta_{3i}(poor_{ti}) + \beta_{4i}(lessthanhs_{ti}) + \beta_{5i}(highschool_{ti}) + \beta_{6i}(somecollege_{ti}) + \beta_{7i}(age_{ti}) + \epsilon_{0ti} $$
+
+Macro 1:(Intercept) 
+$$ \beta_{0i} = \beta_0 + \mu_{0i} $$
+
+Macro 2: (Slope)
+$$ \beta_{1i} = \beta_1 + \mu_{1i} $$
+
+Combined: 
+$$ BMI_{ti} = \beta_{0} + \beta_{1}(time_{ti}) + \beta_{2}(female_{ti}) + \beta_{3}(poor_{ti}) + \beta_{4}(lessthanhs_{ti}) + \beta_{5}(highschool_{ti}) + \beta_{6}(somecollege_{ti}) + \beta_{7}(age_{ti}) + \mu_{0i} +\mu_{1i}(time_{ti}) + \epsilon_{0ti} $$
+
+
+$$ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0i}\\
+\mu_{1i}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{\mu0} &  \\ 
+0 & \sigma^2_{\mu1}
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+
+$$ Level 1: 
+[\epsilon_{0ti}] 
+\sim N(0,\sigma^2_{\epsilon0}) $$
+
+
+
+d. Model 4: Same as Model 3, except that now you also allow for an interaction
+between female gender and time. Include “female” main effects as well as
+interactions with the time variable.
+
+Micro: 
+$$ BMI_{ti} = \beta_{0i} + \beta_{1i}(time_{ti}) + \beta_{2i}(female_{ti}) + \beta_{3i}(poor_{ti}) + \beta_{4i}(lessthanhs_{ti}) + \beta_{5i}(highschool_{ti}) + \beta_{6i}(somecollege_{ti}) + \beta_{7i}(age_{ti}) + \beta_{8i}(time_{ti}*female_{ti}) +  \epsilon_{0ti} $$
+
+Macro 1:(Intercept) 
+$$ \beta_{0i} = \beta_0 + \mu_{0i} $$
+
+Macro 2: (Slope)
+$$ \beta_{1i} = \beta_1 + \mu_{1i} $$
+
+Combined: 
+$$ BMI_{ti} = \beta_{0} + \beta_{1}(time_{ti}) + \beta_{2}(female_{ti}) + \beta_{3}(poor_{ti}) + \beta_{4}(lessthanhs_{ti}) + \beta_{5}(highschool_{ti}) + \beta_{6}(somecollege_{ti}) + \beta_{7}(age_{ti}) + \beta_8(time_{ti}*female_{ti}) + \mu_{0i} +\mu_{1i}(time_{ti}) + \epsilon_{0ti} $$
+
+
+$$ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0i}\\
+\mu_{1i}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{\mu0} &  \\ 
+0 & \sigma^2_{\mu1}
+\end{array}\right]
+\end{array}\right) $$ 
+
+
+
+$$ Level 1: 
+[\epsilon_{0ti}] 
+\sim N(0,\sigma^2_{\epsilon0}) $$
+
+
+Answer the following questions about the models you wrote in Question 2:
+a. Model 1 Questions:
+i. What are the interpretations for the two variance (random effect)
+parameters in this model?
+
+Answer: `\mu_{0i}` is the variation found between individuals across time. 
+`\epsilon_{0ti}` is the variation within each individual across time. 
+
+
+ii. What does the beta parameter “time” explain in this model? In other
+words, is the “change over time” a change within-individuals or across all
+individuals?
+
+Answer: The fixed effect of time explains the overall association between time and BMI. The change in BMI over time is across all individuals. 
+
+b. Model 2 Questions:
+i. How do we expect that adding the level 2 variables will affect each of the
+two variance parameters of the model?
+
+Answer: The addition of level 2 variables will reduce variation across all individuals, so the `\mu_{0i}` should be lower as these fixed effects should affect this value. Within-individual differences should not change much.  
+
+ii. What does including a main effect for “female” imply about how we think
+female versus male gender affects BMI trajectories?
+
+Answer: The main effect for female implies that the trajectory between males and females should be different. Such as across all observations, females may have lower BMI than males. 
+
+c. Model 3 Questions:
+i. What does the beta parameter for “time” represent in this model?
+
+Answer: The fixed effect of time is the overall association between time and BMI across all individuals and obseverations.
+
+
+ii. What does it mean to allow “time” to be a random variable in this model?
+
+Answer: By allowing time to be a random variable in this model, we can examine the variation between individuals in the slope of the association between time and BMI. We can examine as time moves forward, what their BMI will look like and see if there is variation between indivdiuals. 
+
+In other words, what does this allow for?
+
+Answer: This allows to examine if individuals' BMI varies over time, rather than an overall examination of all individuals' BMI over time in the fixed effect. We can then examine if there are certain characteristics of some individuals that have different trajectories of BMI over time. 
+
+d. Model 4 Questions:
+i. What does it mean that we are allowing for “female” gender to interact
+with “time” in this model? In other words, how does it differ from what we
+did in Question 2?
+
+Answer: Since we are allowing for an interaction between the fixed effects of female and time, we are looking at the association between sex and BMI across all observations. This differs slightly from question 2 because we are interested in examining if the overall difference between the two sexes are different as time goes on in this example, while question 2, we were interested in if there were differences across all 4 waves collectively. 
+
+Fit all four models outlined in Question 2 using STATA. When fitting Models 1 and 2
+also calculate the ICC.
+
+```{r}
+long %>% 
+  colnames()
+
+time_only <- lmer(bmi_values ~ time + 1 +
+                    (1 | aid), data = long, REML = FALSE,
+                    control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(time_only)
+
+```
+
+```{r}
+intercept <- lmer(bmi_values ~ time + sex + poor + parent_highestedu + age_w1 +
+                    1 +
+                    (1 | aid), data = long, REML = FALSE,
+                    control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(intercept)
+
+
+```
+
+`https://stats.stackexchange.com/questions/13166/rs-lmer-cheat-sheet/13173#13173`
+
+```{r convergence check}
+str(long)
+
+long %>% 
+  group_by(aid) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  count(aid) %>% 
+  summarize(individual = sum(n))
+
+
+test <- lmer(bmi_values ~ time + sex + poor + parent_highestedu + age_w1 +
+                    (time || aid), data = long, REML = FALSE,
+                    control = lmerControl(optimizer = 'Nelder_Mead'))
+summary(test)
+# summary(allFit(test))
+
+
+```
+
+
+```{r}
+slope_zero_vcov <- lmer(bmi_values ~ time + sex + poor + parent_highestedu + age_w1 +
+                    (time || aid), data = long, REML = FALSE,
+                    control = lmerControl(optimizer = 'Nelder_Mead'))
+
+summary(slope_zero_vcov)
+
+```
+
+```{r}
+slope_interaction <- lmer(bmi_values ~ time*sex + poor + parent_highestedu + age_w1 +
+                    (time || aid), data = long, REML = FALSE,
+                    control = lmerControl(optimizer = 'Nelder_Mead'))
+
+summary(slope_interaction)
+
+```
+
+
+Answer the following questions using your results from STATA:
+a. Across the four models, which beta parameters are statistically significant at 0.05,
+and what does it mean that they are significant (consider also the direction of any
+effects and what that indicates)?
+
+Answer: 
+Model 1: Across all individuals and observations, the average BMI increased.
+As time went on, BMI increased for all individuals. 
+
+Model 2: Adjusting for time, sex, poor, parent's education, and age, the average individual's BMI increased. 
+As time went on, the overall average individual's BMI increased. 
+Individuals with parents that had any education lower than a college degree were found to have a higher BMI across all observations.
+The older an individual was, the higher the overall BMI increased. 
+
+Model 3: Adjusting for time, sex, poor, parent's education, and age, the average individual's BMI increased. 
+As time went on, the overall average individual's BMI increased. 
+Across all observations, females had a lower BMI than males.
+Individuals with parents that had any education lower than a college degree were found to have a higher BMI across all observations.
+The older an individual was, the higher the overall BMI increased. 
+
+Model 4: Adjusting for time, sex, poor, parent's education, and age, the average individual's BMI increased. 
+As time went on, the overall average individual's BMI increased. 
+Across all observations, females had a lower BMI than males.
+Individuals with parents that had any education lower than a college degree were found to have a higher BMI across all observations.
+The older an individual was, the higher the overall BMI increased. 
+As time went on, females had an overall larger increase in BMI than males. 
+
+b. How do the variance parameters change across the four models (i.e., Model 1 to
+Model 2, Model 2 to Model 3, Model 3 to Model 4)? Why do you expect that the
+changes at each step occurred as they did?
+
+Answer: The variation between individuals in model 1 was 22.55 and decreased to 21.97. This change was because the additional variables accounted for additional variance in explaining differences in BMI between individuals. These variables did not appear to contribute much to a difference within individuals as these values were roughly the same (7.90 to 7.84). The differences between model 2 and model 3 showed that the differences in BMI between individuals changed when accounting for the differences in slopes of time and BMI. The differences between individuals' BMI changed from 21.97 to 13.32, which could be due to the incorporation of the slopes changing between time and BMI for individuals. Now accounting for the differing slopes of time and BMI between individuals, there was less variation within individuals also (7.84 to 5.03). Lastly, with the inclusion of the fixed effect interaction between time and sex on BMI, there didn't seem to be much of a difference in variation of random effects. This could be because the interaction was focusing on time and females across all observations.
+
+c. For the two Random Intercept models (Models 1 and 2) what are the ICCs, and
+what do these values mean? Use the variance partition coefficient interpretation.
+
+Answer: The ICC for the model only including time was .64, while the model that adjusted for additional variables (e.g., age, sex, parent education, poverty) had an ICC of .62. For the first model, 64% of the variation in BMI is attributable to differences between individuals. While adjusting for the additional variables, 62% of the variation in BMI was attributable to differences between individuals. 
+
+```{r}
+performance::icc(time_only)
+performance::icc(intercept)
+```
