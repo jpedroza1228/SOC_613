@@ -1,6 +1,6 @@
 ---
 title             : "Investigating Differences in the Associations Between Violent Crime Rates and Physical Inactivity Among Counties Across California."
-shorttitle        : "Title"
+shorttitle        : "Crime rates and physical inactivity"
 
 author: 
   - name          : "Jonathan A. Pedroza"
@@ -46,7 +46,7 @@ draft             : no
 
 documentclass     : "apa6"
 classoption       : "man"
-output            : papaja::apa6_pdf
+output            : papaja::apa6_word
 ---
 
 ```{r setup, include = FALSE}
@@ -73,31 +73,101 @@ set.seed(20200304)
 
 ca_full_z <- read_csv('E:/UO/R Projects/data science_public data/ca_full_z.csv')
 
+ca_des <- read_csv('E:/UO/R Projects/data science_public data/county_data/full.csv')
+
 ```
 
+Physical inactivity is a growing problem in the United States, particularly due to the health concerns as a risk factor for several chronic health conditions (@wang2004physical). While individual-level factors may be influential on physical inactivity, there is a need to exxamine more ecological factors that may directly affect why groups of people are not being active (@sallis2012role). One factor that has been found to influence individuals' physical inactivity levels is level of crime (@davison2006attributes). 
 
-
-
-Thus, the aims of this study were: 1) to examine if the association between violent crime rates and physical inactivity differs across California counties and 2) to investigate if violent crime rates is associated with more physical inactivity in California.
+The issue is that much of the literature has focused mainly on cross-sectional studies that are exxamining a specific environment at a more micro-level approach (@davison2006attributes). While beneficial, there is a need to connect aspects of a neighborhood and show that crime may look different across various geographic regions. For instance, @robinson2016spatial found that in Massachusetts, more crime was associated with more physical activity. This is inconsistent with literature in San Diego, which found that in children in high-crime areas, children in low-crime areas engaged in roughly 40 minutes more moderate-to-vigorous physical activity (@kneeshaw2015neighborhood). Differences in crime areas suggest more investigation into multi-level models on a larger level to see if differences exist at a county level. There is now a push for multi-level modeling approaches that focus on environmental factors that may be influencing why people are not meeting recommendations for leisure-time physical activity (@sallis2012role). Thus, the aims of this study were: 1) to examine if the association between violent crime rates and physical inactivity differs across California counties and 2) to investigate if more violent crime is associated with higher physical inactivity in California.
 
 
 # Methods
 
+## Data & Sample
 
-We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+Data was collected from the County Health Rankings & Roadmaps (@2019measuresroadmaps). The County Health Rankings & Roadmaps is a program that gathers data on various indicators of health and demographic information through a collaboration between the Robert Wood Johnson Foundation and the University of Wisconsin's Population Health Institute (@2019measuresroadmaps). Due to the nature of data collection for violent crime rates, comparisons are not recommended between states, so data was only collected for the state of California. Nine waves of data were collected from 2011 to 2019 on counties within California (*N* = 58). Data in the current study were utilized, as measurement of the variables of interest were consistent across the nine waves. 
 
-## Participants
+As shown in Table 1, the data from California across the years did not differ much. Overall, obesity rates, rurality, and physical inactivity held constant over the years. However, median household incomes and population are rising in California, while overall, crime rates have shown a trend downward. Each of the 58 counties in the dataset reported values nine times, once for each wave, for a total of 522 observations. 
 
-## Material
+## Measures
 
-## Procedure
+The outcome, physical inactivity, was measured using the Center for Disease Control (CDC) and Prevention's Diabetes Interactive Atlas, which combines data from the CDC's Behavioral Risk Factor Surveillance System (BRFSS) and the U.S. Census Bureau's Population Estimates Program (@2019measuresroadmaps). Physical ianctivity is defined as the proportion of adults that are 20 years or older that reported no leisure-time physical activity. Physical inactivity was treated as a continuous variable in this study.
 
-## Data analysis
-We used `r cite_r("r-references.bib")` for all our analyses.
+The predictor of interest was violent crime. Violent crime was examined through the number of reported violent crime offenses per 100,000 people. Violent crime data was collected from the Federal Bureau of Investigation's Uniform Crime Reporting Program (@2019measuresroadmaps). Specifically, the data used for violent crime is based off of county-level arrest and offense reports on violent crime from law enforcement agencies. Violent crime was measured as a continuous variable. 
 
+Lastly, empirically relevant covariates were also included in the models to assist in answering the aims of the current study. First, adult obesity was included and was also measured by the CDC's Diabetes Interactive Atlas (@2019measuresroadmaps). Obesity was defined as the proportion of adults that reports a body mass index of 30kg/m2 or greater. Median household income was collected from the U.S. Census Bureau's Small Area Income and Poverty Estimates (@2019measuresroadmaps), where median household income was the income where half of households in the county make more and the other half makes less than this estimate. Rurality and population were collected by estimating the percent of rural individuals and the population of each county based on U.S. Census Population Estimates (@2019measuresroadmaps). Lastly, the year of the data was treated as a covariate as well. Each of the covariates were treated as continuous variables. 
+
+## Analytic Plan
+
+Analyses for the current study were conducted through three models. In each model, restricted maximum likelihood estimates were used. First, a random intercept model was tested, while adjusting for the year of the data. The second model, another random intercept model, tested included all of the covariates as well as violent crime as the predictor of interest. Violent crime was treated as a fixed effect in this model to answer the second aim. In this model, special attention is drawn to the betas to answer the second aim. The third model was a random slope model, that included violent crime as a random effect to examine if the association between violent crime and physical inactivity differed across California counties. This model addresses the first aim of this study. In this model, more attention is placed on the variance parameters, to see if there is variation in the association of violent crime and physical inactivity among the counties; however, with the inclusion of the random effect, there is interest in if the beta for overall violent crime changes. The covariance in the random slope model was structured, where covariance was established as zero. In order to examine whether specific changes in the models (i.e., including covariates, random effects) are significantly different from previous models, likelihood ratio tests will be conducted. These tests will suggest which model is best in interpreting the findings of this study. When conducting the likelihood ratio tests, maximum likelihood estimates were used to compare models. 
+
+Model 1:
+$$ Inactivity_{ti} = \beta_{0i} + \beta_{1i}(year_{ti}) + \epsilon_{0ti} $$
+
+$$ \beta_{0i} = \beta_0 + \mu_{0i}  $$
+
+$$ Inactivity_{ti} = \beta_0 + \beta_{1}(year_{ti}) + \mu_{0i} + \epsilon_{0ti} $$
+
+$$ Level 2: [\mu_{0i}] \sim N(0, \sigma^2_{\mu0}) $$
+
+$$ Level 1: [\epsilon_{0ti}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+Model 2:
+$$ Inactivity_{ti} = \beta_{0i} + \beta_{1i}(year_{ti}) + \beta_{2i}(obesity_{ti}) + \beta_{3i}(rural_{ti}) + \beta_{4i}(income_{ti}) + \beta_{5i}(population_{ti}) + \beta_{6i}(crime_{ti}) + \epsilon_{0ti} $$
+
+$$ \beta_{0i} = \beta_0 + \mu_{0i}  $$
+
+$$ Inactivity_{ti} = \beta_0 + \beta_{1i}(year_{ti}) + \beta_{2i}(obesity_{ti}) + \beta_{3i}(rural_{ti}) + \beta_{4i}(income_{ti}) + \beta_{5i}(population_{ti}) + \beta_{6i}(crime_{ti}) + \mu_{0i} + \epsilon_{0ti} $$
+
+$$ Level 2: [\mu_{0i}] \sim N(0, \sigma^2_{\mu0}) $$
+
+$$ Level 1: [\epsilon_{0ti}] \sim N(0,\sigma^2_{\epsilon0}) $$
+
+Model 3:
+$$ Inactivity_{ti} = \beta_{0i} + \beta_{1i}(year_{ti}) + \beta_{2i}(obesity_{ti}) + \beta_{3i}(rural_{ti}) + \beta_{4i}(income_{ti}) + \beta_{5i}(population_{ti}) + \beta_{6i}(crime_{ti}) + \epsilon_{0ti} $$
+
+$$ \beta_{0i} = \beta_0 + \mu_{0i}  $$
+
+$$  \beta_{1i} = \beta_1 + \mu_{1i} $$
+
+$$ Inactivity_{ti} = \beta_0 + \beta_{1i}(year_{ti}) + \beta_{2i}(obesity_{ti}) + \beta_{3i}(rural_{ti}) + \beta_{4i}(income_{ti}) + \beta_{5i}(population_{ti}) + \beta_{6i}(crime_{ti}) + \mu_{0i} + \mu_{1i}(crime_{ti}) + \epsilon_{0ti} $$
+
+$$ Level 2:
+\left[\begin{array}{cc} 
+\mu_{0i}\\
+\mu_{1i}
+\end{array}\right] 
+\sim N  
+\left(\begin{array}{cc}
+0,
+\left[\begin{array}{cc}
+\sigma^2_{\mu0} &  \\ 
+0 & \sigma^2_{\mu1}
+\end{array}\right]
+\end{array}\right) $$ 
+
+$$ Level 1: [\epsilon_{0ti}] \sim N(0,\sigma^2_{\epsilon0}) $$
 
 # Results
-```{r eval = FALSE}
+
+## Model Findings
+
+In the first model, the inclusion of year was significantly associated with physical inactivity, where as time went on, physical inactivity levels reduced. Table 1 shows that the variation of counties' physical inactivity was large, but there was some variation that appeared to be from within counties. The inclusion of covariates and overall violent crime in the model were a significant improvement (*p* < .001). This was suggested as some of the county-level variables (i.e., obesity, rurality, violent crime) were significantly associated with more physical inactivity. The inclusion of covariates and violent crime reduced the variation found between counties. In the random slopes model, obesity, rurality, and violent crime were all still associated with physical inactivity. There was some variation between counties in the association between violent crime and physical inactivity, although the inclusion of the random effect was not significant (*p* = .06). Therefore, the best fitting model was the model that included relevant covariates while examining differences in physical inactivity differences among California counties. The variation in counties' physical inactivity is displayed in Figure 1. 
+
+# Discussion
+
+The aims of the current study were to examine if there were differences in the association between violent crime and physical activity between counties across nine waves of publically available data, as well as investigate if overall violent crime was associated with an increase in physical inactivity. There were no significant differences in counties' associations between violent crime and physical inactivity; however, there was a significant association between violent crime and physical inactivity in California.
+
+While no significant differences between counties in the association between violent crime and physical inactivity were found, the issue may be from examining data at the county level. The non-significant finding is inconsistent with past literature (@kneeshaw2015neighborhood), which found that more crime was associated with less physical activity in children. Since this study had the same amount of variance within counties as between counties, it is possible that examining at the county level is not sufficient enough to find differences in this association. @kneeshaw2015neighborhood found this association in census tracts, which California has over 8,000 census tracts (@uscensusbureau_2018). Future studies should examine census tracts or neighborhoods within counties, as a county as a whole may not have meaningful rattes of violent crimes, but specific neighborhoods within those counties may have larger crime than other neighborhoods. 
+
+Interestingly, there was a significant association between violent crime and physical inactivity, where more violent crime was associated with more physical inactivity. This is consistent with literature that has found that crime is a factor in reducing physical activity (@davison2006attributes). This further supports the idea that violent crime does influence physical inactivity levels across California, but in order to see potential differences between areas, there is a need to focus on micro-level groups rather than relying on county-level data. 
+
+As with all studies, there are limitations in the design of this study. First, there is the issue of only examining county-level data. As stated, while there was some variation between counties in California, it appears that there may be within-county differences, such as between neighborhoods, that may be influencing physical inactivity levels. Future studies should examine existing data that correlates to the County Health Rankings & Roadmaps data, such as BRFSS individual-level data to see if having individuals nested within counties may parse out potential findings that this study could not find. Secondly, the County Health Rankings & Roadmaps suggests not examining differences between states' violent crime levels based on differences in reporting violent crimes from law-enforcement agencies between states, but this may also be the case between counties within California. In relation to this issue, future studies should investigate where exactly do these violent crimes affect physical inactivity levels. Especially considering that past literature has found that crime was positively associated with physical activity through spatial analyses (@robinson2016spatial).
+
+The mixed findings of this study reveal the need for further investigation into what exactly makes people not want to be active. While we know that over the years, higher violent crime has been correlated with more physical inactivity in California, there is a need to find out what exactly is it about crime that makes people less active. Resources need to be put into policies that address crime in California counties to reduce physical inactivity and thus reduce chronic health conditions. 
+
+```{r}
 # Models
 
 null <- lmer(physical_inactivity ~ release_year + (1 | county_name), 
@@ -110,7 +180,7 @@ performance::icc(null)
 
 covariates <- lmer(physical_inactivity ~ adult_obesity + percent_rural + 
 median_household_income + population + 
-release_year +
+release_year + violent_crime +
 (1 | county_fips_code), 
 data = ca_full_z,
 control = lmerControl(optimizer = 'Nelder_Mead'))
@@ -124,12 +194,11 @@ violence_included <- lmer(physical_inactivity ~ adult_obesity +
 percent_rural + 
 median_household_income + population + 
 release_year + violent_crime +
-(1 | county_fips_code), 
+(violent_crime || county_fips_code), 
 data = ca_full_z,
 control = lmerControl(optimizer = 'Nelder_Mead'))
 
 summary(violence_included)
-performance::icc(violence_included)
 
 anova(covariates, violence_included)
 
@@ -142,145 +211,186 @@ demographic <- data.frame(Variable = c('Obesity Rates',
                                  'Population',
                                  'Violent Crime Rates',
                                  'Physical Inactivity'),
-                           Overall = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2011 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2012 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2013 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2014 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2015 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2016 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2017 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2018 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'),
-                          Year_2019 = c('XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX',
-                                 'XX'))
-demographic
+                           Overall = c('31% (0.04)',
+                                 '58% (0.31)',
+                                 '46605.94 (12219.66)',
+                                 '231830.1 (3517716)',
+                                 '263.1 (209.8)',
+                                 '27% (0.05)'),
+                          Year_2011 = c('29% (0.04)',
+                                 '59% (0.31)',
+                                 '44302.6 (11457.46)',
+                                 '192360 (1170170)',
+                                 '323.65 (243.09)',
+                                 '27% (0.05)'),
+                          Year_2012 = c('30% (0.04)',
+                                 '59% (0.31)',
+                                 '43251.14 (10735.7)	',
+                                 '192360 (1170170)',
+                                 '292.54 (244.28)',
+                                 '28% (0.05)'),
+                          Year_2013 = c('30% (0.04)',
+                                 '58% (0.32)',
+                                 '43978.79 (11096.15)	',
+                                 '195233 (1189229)',
+                                 '273.13 (226.90)',
+                                 '28% (0.05)'),
+                          Year_2014 = c('31% (0.04)',
+                                 '58% (0.32)',
+                                 '44944.47 (11387.21)	',
+                                 '196688 (1199770)',
+                                 '259.34 (207.84)	',
+                                 '28% (0.05)'),
+                          Year_2015 = c('31% (0.04)',
+                                 '58% (0.32)',
+                                 '46118.25 (11647.20)',
+                                 '198075.7 (1209391)',
+                                 '250.92 (196.97)',
+                                 '27% (0.05)'),
+                          Year_2016 = c('31% (0.04)',
+                                 '58% (0.32)',
+                                 '47236.81 (12094.23)	',
+                                 '199847.7 (1222847)',
+                                 '250.92 (196.97)',
+                                 '27% (0.05)'),
+                          Year_2017 = c('31% (0.05)',
+                                 '58% (0.32)',
+                                 '48719.76 (12351.36)	',
+                                 '302457.1 (5821586)',
+                                 '247.57 (190.76)',
+                                 '26% (0.05)'),
+                          Year_2018 = c('31% (0.05)',
+                                 '58% (0.32)',
+                                 '49662.72 (12886.65)	',
+                                 '303501.1 (5847099)',
+                                 '247.57 (190.76)',
+                                 '27% (0.05)'),
+                          Year_2019 = c('32% (0.05)',
+                                 '58% (0.32)',
+                                 '51240.01 (13498.36)',
+                                 '305935.4 (5894288)',
+                                 '254.12 (192.98)',
+                                 '26% (0.05)'))
+
+knitr::kable(demographic, caption = 'Sample Demographics',
+             label = 'Standard deviation in parentheses')
 
 models <- data.frame(Variable = c(' ',
                                   'Fixed effect estimates',
-                                 'Intercept',
-                                 'Adult Obesity',
-                                 'Percent Rurality',
-                                 'Median Household Income',
-                                 'Population',
-                                 'Release Year',
-                                 'Violent Crime',
-                                 'Random effect estimates',
-                                 'County',
-                                 'Violent Crime',
-                                 'Fit statistics',
-                                 'AIC/BIC',
-                                 'Intraclass correlation coefficient',
-                                 'County'),
+                                  'Intercept',
+                                  'Adult Obesity',
+                                  'Percent Rurality',
+                                  'Median Household Income',
+                                  'Population',
+                                  'Release Year',
+                                  'Violent Crime',
+                                  'Random effect estimates',
+                                  'County',
+                                  'Within County',
+                                  'Violent Crime',
+                                  'Fit statistics',
+                                  'AIC/BIC',
+                                  'Intraclass correlation coefficient',
+                                  'Between Counties'),
                      Model1 = c('No Predictors',
-                                            ' ',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            ' ',
-                                            'value and CI',
-                                            ' ',
-                                            ' ',
-                                            'fit values',
-                                            ' ',
-                                            'ICC'),
+                                ' ',
+                                '17.35 (9.27)',
+                                ' ',
+                                ' ',
+                                ' ',
+                                ' ',
+                                '-0.01 (0.005)*',
+                                ' ',
+                                ' ',
+                                '0.21',
+                                '0.07',
+                                ' ',
+                                ' ',
+                                '316.74',
+                                ' ',
+                                '.74'),
                      Model2 = c('County-Level Predictors',
-                                             ' ',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            ' ',
-                                            'value and CI',
-                                            ' ',
-                                            ' ',
-                                            'fit values',
-                                            ' ',
-                                            'ICC'),
+                                ' ',
+                                '0.70 (10.91)',
+                                '0.32 (0.03)***',
+                                '0.10 (0.04)*',
+                                '-0.03 (0.03)',
+                                '0.14 (0.09)',
+                                '0.00 (0.01)',
+                                '0.08 (0.03)*',
+                                ' ',
+                                '0.06',
+                                '0.07',
+                                ' ',
+                                ' ',
+                                '250.35***',
+                                ' ',
+                                '.27'),
                      Model3 = c('Random Slopes',
-                                            ' ',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            'value and CI',
-                                            ' ',
-                                            'value and CI',
-                                            'value and CI',
-                                            ' ',
-                                            'fit values',
-                                            ' ',
-                                            ' '))
-models
+                                ' ',
+                                '4.31 (11.37)',
+                                '0.28 (0.04)***',
+                                '0.14 (.05)**',
+                                '-0.01 (0.03)',
+                                '0.11 (0.11)',
+                                '-0.003 (0.01)',
+                                '0.12 (0.05)*',
+                                ' ',
+                                '0.07',
+                                '0.07',
+                                '0.05',
+                                ' ',
+                                '248.91',
+                                ' ',
+                                ' '))
+
+knitr::kable(models, caption = "Comparisons Between Models",
+             label = "***p < .001, **p < .01, *p < .05")
+
 ```
 
+```{r}
+intercept_mu0 <- ranef(covariates, condVar = TRUE)
+intercept_mu0 <- as.data.frame(intercept_mu0)
 
+intercept_mu0 <- intercept_mu0 %>% 
+  rename(intercept_term = term,
+         county_fips_code = grp,
+         intercept_diff = condval,
+         intercept_se = condsd)
 
-# Discussion
+intercept_mu0$county_fips_code <- as.character(intercept_mu0$county_fips_code)
+ca_full_z$county_fips_code <- as.character(ca_full_z$county_fips_code)
 
+visual <- left_join(ca_full_z, intercept_mu0, by = 'county_fips_code')
+
+visual$county_name <- str_remove_all(visual$county_name, '_county')
+
+visual <- visual %>%
+    mutate(county_name = str_replace(county_name, "_", " "))
+
+visual$county_name <- str_to_title(visual$county_name)
+
+visual %>% 
+  ggplot(aes(fct_reorder(as.factor(county_name), intercept_diff), intercept_diff)) +
+  geom_errorbar(aes(ymin = intercept_diff + qnorm(0.025)*intercept_se,
+                    ymax = intercept_diff + qnorm(0.975)*intercept_se)) +
+  geom_point(aes(color = county_name)) +
+  theme_minimal() +
+  theme(legend.position = 'none') +
+  labs(y = 'Variance',
+       x = 'Counties',
+       title = 'Variation in Physical Inactivity Across\nCalifornia Counties',
+       subtitle = 'Random Intercepts Model with Covariates') +
+  coord_flip()
+
+```
 
 \newpage
 
 # References
 ```{r create_r-references}
-r_refs(file = "r-references.bib")
+r_refs(file = "soc_references.bib")
 ```
 
 \begingroup
